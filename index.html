@@ -35,10 +35,10 @@
   --river-soft: #8e887e;
 
   --suppressed: #d8d2c5;
-  --above: #5b8a5f;
-  --above-soft: #c5d6c0;
-  --below: #a85a5a;
-  --below-soft: #d8c0c0;
+  --above: #4b3a8e;
+  --above-soft: #c8c2dc;
+  --below: #c89a26;
+  --below-soft: #ecdfb5;
   --shadow: 0 2px 12px rgba(0,0,0,0.05);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
   color-scheme: light;
@@ -63,10 +63,10 @@
   --river-soft: #6f6c66;
 
   --suppressed: #383532;
-  --above: #7eb088;
-  --above-soft: #4a6a52;
-  --below: #c87878;
-  --below-soft: #6e4646;
+  --above: #7a6ab0;
+  --above-soft: #4a3e6e;
+  --below: #e0c060;
+  --below-soft: #5e521f;
   --shadow: 0 3px 18px rgba(0,0,0,0.36);
   --shadow-lg: 0 12px 40px rgba(0,0,0,0.45);
   color-scheme: dark;
@@ -941,14 +941,163 @@ aside::-webkit-scrollbar-track { background: transparent; }
   border-radius: 4px;
   padding: 12px 15px;
   margin-top: 11px;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.15rem;
-  font-style: italic;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.94rem;
+  font-style: normal;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.55;
   animation: fadeInUp 0.22s cubic-bezier(.2,.7,.2,1);
 }
 .info-popover em { color: var(--jacaranda); font-weight: 500; }
+.info-popover strong { color: var(--text-primary); font-weight: 600; }
+
+/* ─── BURDEN PILLS ───────────────────────────────────────────────── */
+.burden-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  align-items: center;
+}
+.burden-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid;
+  position: relative;
+}
+.burden-pill .burden-pct {
+  font-weight: 700;
+  font-feature-settings: 'tnum' 1;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+.burden-pill .burden-text {
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.62rem;
+  opacity: 0.9;
+}
+.burden-pill .burden-of {
+  font-weight: 300;
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+.burden-pill .burden-info-btn {
+  margin-left: 1px;
+  width: 16px;
+  height: 16px;
+  font-size: 0.78rem;
+  border-color: currentColor;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+}
+.burden-pill .burden-info-btn:hover,
+.burden-pill .burden-info-btn.active {
+  opacity: 1;
+  background: rgba(0,0,0,0.08);
+}
+[data-theme="stone"] .burden-pill .burden-info-btn:hover,
+[data-theme="stone"] .burden-pill .burden-info-btn.active {
+  background: rgba(255,255,255,0.12);
+}
+
+[data-theme="parchment"] .burden-affordable {
+  background: #e8efde; color: #4a6e4a; border-color: rgba(74,110,74,0.32);
+}
+[data-theme="parchment"] .burden-stress {
+  background: #f4e8c8; color: #8a5e10; border-color: rgba(138,94,16,0.30);
+}
+[data-theme="parchment"] .burden-severe {
+  background: #ead4cc; color: #8e3030; border-color: rgba(142,48,48,0.32);
+}
+[data-theme="stone"] .burden-affordable {
+  background: rgba(158,184,158,0.14); color: #9eb89e; border-color: rgba(158,184,158,0.30);
+}
+[data-theme="stone"] .burden-stress {
+  background: rgba(212,160,50,0.14); color: #d4a032; border-color: rgba(212,160,50,0.30);
+}
+[data-theme="stone"] .burden-severe {
+  background: rgba(212,144,140,0.14); color: #d4908c; border-color: rgba(212,144,140,0.30);
+}
+
+/* Burden headline card (when "Burden" is the active metric) */
+[data-theme="parchment"] .burden-affordable-text { color: #4a6e4a; }
+[data-theme="parchment"] .burden-stress-text     { color: #8a5e10; }
+[data-theme="parchment"] .burden-severe-text     { color: #8e3030; }
+[data-theme="stone"] .burden-affordable-text { color: #9eb89e; }
+[data-theme="stone"] .burden-stress-text     { color: #d4a032; }
+[data-theme="stone"] .burden-severe-text     { color: #d4908c; }
+
+/* Inline info button on legend title (for housing burden choropleth) */
+.legend-title .info-btn.legend-info-btn {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  font-size: 0.74rem;
+}
+
+/* Burden denominator sub-toggle (only visible when Burden choropleth active) */
+.burden-against[hidden] { display: none; }
+.burden-against {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: -2px 0 10px;
+  padding: 6px 0 8px;
+  border-bottom: 1px dashed var(--border-light);
+}
+.ba-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ba-pills {
+  display: flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px;
+  flex: 1;
+}
+.ba-pill {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 5px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.15s ease, box-shadow 0.18s ease;
+}
+.ba-pill:hover:not(.active) { color: var(--text-primary); }
+.ba-pill.active {
+  background: var(--river);
+  color: var(--bg-card);
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+[data-theme="stone"] .ba-pill.active { color: var(--bg-deep); }
+
+/* ─── MODE-AWARE FOOTER ATTRIBUTION ──────────────────────────────── */
+body[data-mode="sal"] .panel-footer .source-poa { display: none; }
+body[data-mode="poa"] .panel-footer .source-sal { display: none; }
 .metric-card .primary {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.95rem;
@@ -1149,6 +1298,13 @@ aside::-webkit-scrollbar-track { background: transparent; }
 
     <div class="legend-pane" data-pane="distribution">
       <div class="legend-title" id="legend-title">Loading…</div>
+      <div class="burden-against" id="burden-against" hidden>
+        <span class="ba-label">Against</span>
+        <div class="ba-pills">
+          <button class="ba-pill active" data-denom="household" type="button">Household</button>
+          <button class="ba-pill" data-denom="personal" type="button">Personal</button>
+        </div>
+      </div>
       <div class="legend-bar" id="legend-bar"></div>
       <div class="legend-scale">
         <span id="legend-min">—</span>
@@ -1157,7 +1313,7 @@ aside::-webkit-scrollbar-track { background: transparent; }
     </div>
 
     <div class="legend-pane" data-pane="compare" hidden>
-      <div class="legend-title">Compare to my income</div>
+      <div class="legend-title" id="compare-title">Compare to my income</div>
       <div class="compare-input-row">
         <span class="compare-prefix">$</span>
         <input type="text" id="compare-input" inputmode="decimal" placeholder="e.g. 1,500" autocomplete="off" />
@@ -1169,7 +1325,7 @@ aside::-webkit-scrollbar-track { background: transparent; }
         <button class="cad-pill" data-unit="annual" type="button">Annually</button>
       </div>
       <div class="compare-summary" id="compare-summary">
-        <div class="compare-hint">Enter an amount to colour suburbs <em>above</em> in green and <em>below</em> in red, against the <span id="compare-metric-label">selected metric</span>.</div>
+        <div class="compare-hint">Enter an amount to split suburbs <em>at or above</em> versus <em>below</em> the threshold, against the <span id="compare-metric-label">selected metric</span>.</div>
       </div>
     </div>
   </div>
@@ -1190,14 +1346,13 @@ aside::-webkit-scrollbar-track { background: transparent; }
       <div class="opener">Click any suburb or postcode to show its income data.</div>
       <p>Toggle <strong>Suburbs · Census</strong> for ABS 2021 medians of weekly household, family and personal income.</p>
       <p>Toggle <strong>Postcodes · ATO</strong> for 2022–23 mean annual taxable income drawn from individual tax returns.</p>
-      <p>Two windows on the same place: medians of households versus means of taxpayers. They will rarely agree, and the gap itself is informative.</p>
       <div class="hint">Or use the search bar above to jump to a specific area.</div>
     </div>
   </div>
   <div class="panel-footer">
     <span><i>Boundaries</i><a href="https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3" target="_blank" rel="noopener">ABS ASGS 2021</a></span>
-    <span><i>Census</i><a href="https://www.abs.gov.au/census" target="_blank" rel="noopener">ABS 2021 G02 at SAL</a></span>
-    <span><i>ATO</i><a href="https://data.gov.au/data/dataset/taxation-statistics-postcode-data" target="_blank" rel="noopener">Tax Stats 2022–23, Table 6</a></span>
+    <span class="source-sal"><i>Census</i><a href="https://www.abs.gov.au/census" target="_blank" rel="noopener">ABS 2021 G02 at SAL</a></span>
+    <span class="source-poa"><i>ATO</i><a href="https://data.gov.au/data/dataset/taxation-statistics-postcode-data" target="_blank" rel="noopener">Tax Stats 2022–23, Table 6</a></span>
   </div>
 </aside>
 
@@ -1213,21 +1368,23 @@ const state = {
   tab: 'distribution',                    // 'distribution' | 'compare'
   compare: { threshold: null, unit: 'weekly' },  // threshold stored as weekly $
   searchIndex: null,                       // built lazily per mode
+  burdenDenominator: 'household',          // 'household' | 'personal' — only active for housing_burden metric
 };
 
 // ─── METRIC DEFINITIONS ─────────────────────────────────────────────
 const METRICS = {
   sal: [
-    { key: 'Median_tot_hhd_inc_weekly',   label: 'Household',  longLabel: 'Median household income',  unit: 'weekly' },
-    { key: 'Median_tot_fam_inc_weekly',   label: 'Family',     longLabel: 'Median family income',     unit: 'weekly' },
-    { key: 'Median_tot_prsnl_inc_weekly', label: 'Personal',   longLabel: 'Median personal income',   unit: 'weekly' },
-    { key: 'Median_rent_weekly',          label: 'Rent',       longLabel: 'Median weekly rent',       unit: 'weekly' },
-    { key: 'Median_mortgage_repay_monthly', label: 'Mortgage', longLabel: 'Median monthly mortgage',  unit: 'monthly' },
+    { key: 'Median_tot_hhd_inc_weekly',   label: 'Household',  longLabel: 'Median household income',  unit: 'weekly',  compareNoun: 'income' },
+    { key: 'Median_tot_fam_inc_weekly',   label: 'Family',     longLabel: 'Median family income',     unit: 'weekly',  compareNoun: 'income' },
+    { key: 'Median_tot_prsnl_inc_weekly', label: 'Personal',   longLabel: 'Median personal income',   unit: 'weekly',  compareNoun: 'income' },
+    { key: 'Median_rent_weekly',          label: 'Rent',       longLabel: 'Median weekly rent',       unit: 'weekly',  compareNoun: 'rent' },
+    { key: 'Median_mortgage_repay_monthly', label: 'Mortgage', longLabel: 'Median monthly mortgage',  unit: 'monthly', compareNoun: 'mortgage' },
+    { key: 'housing_burden',              label: 'Burden',     longLabel: 'Housing cost burden',      unit: 'percent', compareNoun: 'rent', isDerived: true },
   ],
   poa: [
-    { key: 'taxable_income_mean_annual', label: 'Taxable',  longLabel: 'Mean taxable income',  unit: 'weekly', sourceUnit: 'annual' },
-    { key: 'salary_wages_mean_annual',   label: 'Salary',   longLabel: 'Mean salary or wages', unit: 'weekly', sourceUnit: 'annual' },
-    { key: 'total_income_mean_annual',   label: 'Total',    longLabel: 'Mean total income',    unit: 'weekly', sourceUnit: 'annual' },
+    { key: 'taxable_income_mean_annual', label: 'Taxable',  longLabel: 'Mean taxable income',  unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
+    { key: 'salary_wages_mean_annual',   label: 'Salary',   longLabel: 'Mean salary or wages', unit: 'weekly', sourceUnit: 'annual', compareNoun: 'salary' },
+    { key: 'total_income_mean_annual',   label: 'Total',    longLabel: 'Mean total income',    unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
   ],
 };
 
@@ -1239,8 +1396,16 @@ const RAMPS = {
 };
 const SUPPRESSED_COLOR = { parchment: '#d8d2c5', stone: '#383532' };
 const COMPARE_COLORS = {
-  parchment: { above: '#5b8a5f', below: '#a85a5a' },
-  stone:     { above: '#7eb088', below: '#c87878' },
+  // Indigo + Mustard (colour-blind safe, distinct from terracotta accent)
+  parchment: { above: '#4b3a8e', below: '#c89a26' },
+  stone:     { above: '#7a6ab0', below: '#e0c060' },
+};
+const BURDEN_COLORS = {
+  // 3-band ordinal scale — colour-blind-safe traffic-light analogue
+  // Teal (cool, calm) → Mustard (caution) → Oxblood (alarm)
+  // Distinct in luminance + hue across deuteranopia / protanopia / tritanopia
+  parchment: { affordable: '#5b8a7f', stress: '#d4a032', severe: '#8e3030' },
+  stone:     { affordable: '#7eb0a4', stress: '#e0c060', severe: '#c87878' },
 };
 
 // ─── HELPERS ────────────────────────────────────────────────────────
@@ -1277,6 +1442,12 @@ function quantileBreaks(values, n) {
 
 function colourFor(value, metric, breaks, ramp) {
   if (value == null || isNaN(value)) return SUPPRESSED_COLOR[state.theme];
+  if (metric.key === 'housing_burden') {
+    const c = BURDEN_COLORS[state.theme];
+    if (value < 0.3) return c.affordable;
+    if (value < 0.5) return c.stress;
+    return c.severe;
+  }
   if (isCompareActive()) {
     const wk = toWeekly(value, getMetricSourceUnit(metric));
     return wk >= state.compare.threshold ? COMPARE_COLORS[state.theme].above : COMPARE_COLORS[state.theme].below;
@@ -1345,8 +1516,19 @@ function getMetricValue(featureProps, mode, metricKey) {
   if (mode === 'sal') {
     const code = featureProps.sal_code_2021;
     const rec = state.data.census[code];
-    return rec ? rec[metricKey] : null;
+    if (!rec) return null;
+    if (metricKey === 'housing_burden') {
+      // ratio: median weekly rent / chosen income denominator
+      const rent = rec.Median_rent_weekly;
+      const inc = state.burdenDenominator === 'personal'
+        ? rec.Median_tot_prsnl_inc_weekly
+        : rec.Median_tot_hhd_inc_weekly;
+      if (!rent || !inc) return null;
+      return rent / inc;
+    }
+    return rec[metricKey];
   } else {
+    if (metricKey === 'housing_burden') return null; // not available in POA
     const code = featureProps.poa_code_2021;
     const rec = state.data.ato[code];
     return rec ? rec[metricKey] : null;
@@ -1429,21 +1611,78 @@ function selectFeature(layer, feat) {
 // ─── LEGEND ─────────────────────────────────────────────────────────
 function updateLegend(breaks, allValues, metric, ramp) {
   // Distribution pane
-  document.getElementById('legend-title').textContent = metric.longLabel + ' · ' + metric.unit;
-  document.getElementById('legend-bar').innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join('');
-  let min = Math.min(...allValues);
-  let max = Math.max(...allValues);
-  if (metric.sourceUnit && metric.sourceUnit !== metric.unit) {
-    min = toWeekly(min, metric.sourceUnit);
-    max = toWeekly(max, metric.sourceUnit);
-    if (metric.unit === 'monthly') { min = min * 52 / 12; max = max * 52 / 12; }
-    if (metric.unit === 'annual')  { min = min * 52;        max = max * 52; }
+  const titleEl = document.getElementById('legend-title');
+  const barEl = document.getElementById('legend-bar');
+  const minEl = document.getElementById('legend-min');
+  const maxEl = document.getElementById('legend-max');
+  const scaleEl = barEl.parentElement.querySelector('.legend-scale');
+
+  const burdenAgainst = document.getElementById('burden-against');
+
+  if (metric.key === 'housing_burden') {
+    // 3-band ordinal scale with thresholds at 30% and 50%
+    const c = BURDEN_COLORS[state.theme];
+    const denomLabel = state.burdenDenominator === 'personal' ? 'personal income' : 'household income';
+    titleEl.innerHTML = `${metric.longLabel} · ${denomLabel} <button class="info-btn legend-info-btn" type="button" aria-label="What is this?" data-info="housing_burden">i</button>`;
+    barEl.innerHTML = `
+      <div style="background:${c.affordable};flex:3"></div>
+      <div style="background:${c.stress};flex:2"></div>
+      <div style="background:${c.severe};flex:2"></div>
+    `;
+    scaleEl.innerHTML = `
+      <span style="flex:3;text-align:left">Affordable · &lt;30%</span>
+      <span style="flex:2;text-align:center">Stress · 30–50%</span>
+      <span style="flex:2;text-align:right">Severe · &gt;50%</span>
+    `;
+    if (burdenAgainst) {
+      burdenAgainst.hidden = false;
+      burdenAgainst.querySelectorAll('.ba-pill').forEach(b => {
+        b.classList.toggle('active', b.dataset.denom === state.burdenDenominator);
+      });
+    }
+    wireLegendInfoBtn();
+  } else {
+    if (burdenAgainst) burdenAgainst.hidden = true;
+    titleEl.textContent = metric.longLabel + ' · ' + metric.unit;
+    barEl.innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join('');
+    scaleEl.innerHTML = `<span id="legend-min">—</span><span id="legend-max">—</span>`;
+    let min = Math.min(...allValues);
+    let max = Math.max(...allValues);
+    if (metric.sourceUnit && metric.sourceUnit !== metric.unit) {
+      min = toWeekly(min, metric.sourceUnit);
+      max = toWeekly(max, metric.sourceUnit);
+      if (metric.unit === 'monthly') { min = min * 52 / 12; max = max * 52 / 12; }
+      if (metric.unit === 'annual')  { min = min * 52;        max = max * 52; }
+    }
+    document.getElementById('legend-min').textContent = formatBy(metric.unit, min);
+    document.getElementById('legend-max').textContent = formatBy(metric.unit, max);
   }
-  document.getElementById('legend-min').textContent = formatBy(metric.unit, min);
-  document.getElementById('legend-max').textContent = formatBy(metric.unit, max);
 
   // Compare pane
   updateCompareSummary(metric);
+}
+
+function wireLegendInfoBtn() {
+  const btn = document.querySelector('.legend-info-btn');
+  if (!btn) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const titleEl = document.getElementById('legend-title');
+    const existing = titleEl.parentElement.querySelector('.info-popover');
+    document.querySelectorAll('.info-popover').forEach(p => { if (p !== existing) p.remove(); });
+    document.querySelectorAll('.info-btn.active').forEach(b => { if (b !== btn) b.classList.remove('active'); });
+    if (existing) {
+      existing.remove();
+      btn.classList.remove('active');
+      return;
+    }
+    const pop = document.createElement('div');
+    pop.className = 'info-popover';
+    pop.innerHTML = INFO_TEXTS.housing_burden;
+    pop.addEventListener('click', ev => ev.stopPropagation());
+    titleEl.parentElement.insertBefore(pop, titleEl.nextSibling);
+    btn.classList.add('active');
+  });
 }
 
 function updateCompareSummary(metric) {
@@ -1451,8 +1690,11 @@ function updateCompareSummary(metric) {
   const labelEl = document.getElementById('compare-metric-label');
   if (labelEl) labelEl.textContent = metric.longLabel.toLowerCase();
 
+  const compareTitle = document.getElementById('compare-title');
+  if (compareTitle) compareTitle.textContent = `Compare to my ${metric.compareNoun || 'income'}`;
+
   if (!isCompareActive()) {
-    summary.innerHTML = `<div class="compare-hint">Enter an amount to colour suburbs <em>above</em> in green and <em>below</em> in red, against the <span id="compare-metric-label">${metric.longLabel.toLowerCase()}</span>.</div>`;
+    summary.innerHTML = `<div class="compare-hint">Enter an amount to split suburbs <em>at or above</em> versus <em>below</em> the threshold, against the <span id="compare-metric-label">${metric.longLabel.toLowerCase()}</span>.</div>`;
     return;
   }
 
@@ -1523,9 +1765,10 @@ const INFO_TEXTS = {
   Median_tot_hhd_inc_weekly: "Combined income of <em>everyone</em> living in the dwelling — relatives, partners, share-house roommates, all counted. The widest measure.",
   Median_tot_fam_inc_weekly: "Combined income of <em>related people only</em> — couples, parents and children, siblings. Unrelated housemates aren't counted. A house of four friends has four 'families'.",
   Median_tot_prsnl_inc_weekly: "<em>One individual's</em> income, age 15+. Counts the person, not the household they live in.",
+  housing_burden: "<strong>Housing cost burden</strong> = housing payment divided by income. Australia's 30/40 rule treats above 30% as housing stress for the bottom 40% of earners; above 50% is severe.<br><br><strong>Of household</strong> uses median household income (everyone in the dwelling) — the standard housing-policy figure, useful for couples and share households.<br><br><strong>Of personal</strong> uses median personal income, showing what the cost would represent for a single earner carrying it alone.<br><br>Bands: under 30% affordable · 30–50% stress · over 50% severe.",
 };
 
-function metricCard(label, value, baseUnit, isHeadline = false, infoKey = null) {
+function metricCard(label, value, baseUnit, isHeadline = false, infoKey = null, burden = null) {
   const card = document.createElement('div');
   card.className = 'metric-card' + (isHeadline ? ' headline' : '');
   const infoBtn = infoKey && INFO_TEXTS[infoKey] ? `<button class="info-btn" type="button" aria-label="What is this?">i</button>` : '';
@@ -1540,13 +1783,59 @@ function metricCard(label, value, baseUnit, isHeadline = false, infoKey = null) 
   if (baseUnit !== 'weekly') others.push(`<span><b>${fmt.weekly(b.weekly)}</b></span>`);
   if (baseUnit !== 'monthly') others.push(`<span><b>${fmt.monthly(b.monthly)}</b></span>`);
   if (baseUnit !== 'annual') others.push(`<span><b>${fmt.annual(b.annual)}</b></span>`);
+
+  let burdenPillHtml = '';
+  if (burden && (burden.household != null || burden.personal != null)) {
+    const renderPill = (ratio, label, withInfoBtn) => {
+      if (ratio == null || isNaN(ratio)) return '';
+      const pct = Math.round(ratio * 100);
+      let level = 'affordable';
+      if (ratio >= 0.5) level = 'severe';
+      else if (ratio >= 0.3) level = 'stress';
+      return `<div class="burden-pill burden-${level}">
+        <span class="burden-pct">${pct}%</span>
+        <span class="burden-of">of</span>
+        <span class="burden-text">${label}</span>
+        ${withInfoBtn ? '<button class="info-btn burden-info-btn" type="button" aria-label="What is this?">i</button>' : ''}
+      </div>`;
+    };
+    const pills = [];
+    if (burden.household != null) pills.push(renderPill(burden.household, 'household', false));
+    if (burden.personal != null) pills.push(renderPill(burden.personal, 'personal', true));
+    if (pills.length) burdenPillHtml = `<div class="burden-row">${pills.join('')}</div>`;
+  }
+
   card.innerHTML = `
     <h3>${label}${infoBtn}</h3>
     <div class="primary">${dressUnit(primary)}</div>
     <div class="breakdown">${others.join('')}</div>
+    ${burdenPillHtml}
   `;
   if (infoKey) wireInfoButton(card, infoKey);
+  if (burdenPillHtml) wireBurdenInfoButton(card);
   return card;
+}
+
+function wireBurdenInfoButton(card) {
+  const btn = card.querySelector('.burden-info-btn');
+  if (!btn) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const existing = card.querySelector('.info-popover');
+    document.querySelectorAll('.info-popover').forEach(p => { if (p !== existing) p.remove(); });
+    document.querySelectorAll('.info-btn.active').forEach(b => { if (b !== btn) b.classList.remove('active'); });
+    if (existing) {
+      existing.remove();
+      btn.classList.remove('active');
+      return;
+    }
+    const pop = document.createElement('div');
+    pop.className = 'info-popover';
+    pop.innerHTML = INFO_TEXTS.housing_burden;
+    pop.addEventListener('click', ev => ev.stopPropagation());
+    card.appendChild(pop);
+    btn.classList.add('active');
+  });
 }
 
 function wireInfoButton(card, infoKey) {
@@ -1578,27 +1867,87 @@ document.addEventListener('click', () => {
 
 function renderSalPanel(rec, body) {
   const active = state.metricKey;
-  const allCards = {
-    Median_tot_hhd_inc_weekly:     { label: 'Household — median',       value: rec.Median_tot_hhd_inc_weekly,       unit: 'weekly',  group: 'income' },
-    Median_tot_fam_inc_weekly:     { label: 'Family — median',          value: rec.Median_tot_fam_inc_weekly,       unit: 'weekly',  group: 'income' },
-    Median_tot_prsnl_inc_weekly:   { label: 'Personal — median',        value: rec.Median_tot_prsnl_inc_weekly,     unit: 'weekly',  group: 'income' },
-    Median_rent_weekly:            { label: 'Median rent',              value: rec.Median_rent_weekly,              unit: 'weekly',  group: 'housing' },
-    Median_mortgage_repay_monthly: { label: 'Median mortgage',          value: rec.Median_mortgage_repay_monthly,   unit: 'monthly', group: 'housing' },
+  const householdWk = rec.Median_tot_hhd_inc_weekly;
+  const personalWk = rec.Median_tot_prsnl_inc_weekly;
+  const rentWk = rec.Median_rent_weekly;
+  const mortgageWk = rec.Median_mortgage_repay_monthly != null
+    ? rec.Median_mortgage_repay_monthly * 12 / 52 : null;
+
+  const ratio = (num, den) => (num && den) ? num / den : null;
+  const rentBurden = {
+    household: ratio(rentWk, householdWk),
+    personal:  ratio(rentWk, personalWk),
+  };
+  const mortgageBurden = {
+    household: ratio(mortgageWk, householdWk),
+    personal:  ratio(mortgageWk, personalWk),
   };
 
-  // 1) Headline = active metric
-  const a = allCards[active];
-  body.appendChild(metricCard(a.label, a.value, a.unit, true, active));
+  const allCards = {
+    Median_tot_hhd_inc_weekly:     { label: 'Household — median',       value: rec.Median_tot_hhd_inc_weekly,       unit: 'weekly',  group: 'income',  burden: null },
+    Median_tot_fam_inc_weekly:     { label: 'Family — median',          value: rec.Median_tot_fam_inc_weekly,       unit: 'weekly',  group: 'income',  burden: null },
+    Median_tot_prsnl_inc_weekly:   { label: 'Personal — median',        value: rec.Median_tot_prsnl_inc_weekly,     unit: 'weekly',  group: 'income',  burden: null },
+    Median_rent_weekly:            { label: 'Median rent',              value: rec.Median_rent_weekly,              unit: 'weekly',  group: 'housing', burden: rentBurden },
+    Median_mortgage_repay_monthly: { label: 'Median mortgage',          value: rec.Median_mortgage_repay_monthly,   unit: 'monthly', group: 'housing', burden: mortgageBurden },
+  };
 
-  // 2) Remaining income metrics as full-width cards
+  // Burden metric — synthesize an active card from rent + income
+  if (active === 'housing_burden') {
+    const burdenCard = document.createElement('div');
+    burdenCard.className = 'metric-card headline';
+    const usePersonal = state.burdenDenominator === 'personal';
+    const primaryRatio = usePersonal ? rentBurden.personal : rentBurden.household;
+    const secondaryRatio = usePersonal ? rentBurden.household : rentBurden.personal;
+    const primaryDenom = usePersonal ? 'personal' : 'household';
+    const secondaryDenom = usePersonal ? 'household' : 'personal';
+    const primaryIncWk = usePersonal ? personalWk : householdWk;
+
+    if (primaryRatio == null && secondaryRatio == null) {
+      burdenCard.innerHTML = `<h3>Housing cost burden <button class="info-btn burden-info-btn" type="button" aria-label="What is this?">i</button></h3><div class="suppressed">Not available · rent or income suppressed</div>`;
+    } else {
+      const ratio = primaryRatio != null ? primaryRatio : secondaryRatio;
+      const denom = primaryRatio != null ? primaryDenom : secondaryDenom;
+      const pct = Math.round(ratio * 100);
+      let level = 'affordable';
+      if (ratio >= 0.5) level = 'severe';
+      else if (ratio >= 0.3) level = 'stress';
+      const secondaryNote = (primaryRatio != null && secondaryRatio != null)
+        ? `<div class="breakdown" style="margin-top:6px"><span><b>${Math.round(secondaryRatio * 100)}%</b> of ${secondaryDenom} income</span></div>` : '';
+      burdenCard.innerHTML = `
+        <h3>Housing cost burden <button class="info-btn burden-info-btn" type="button" aria-label="What is this?">i</button></h3>
+        <div class="primary burden-${level}-text">${pct}<span class="unit-tail">% of ${denom} income</span></div>
+        <div class="breakdown">
+          <span><b>$${Math.round(rec.Median_rent_weekly).toLocaleString('en-AU')}/wk</b> rent</span>
+          ${primaryIncWk ? `<span><b>$${Math.round(primaryIncWk).toLocaleString('en-AU')}/wk</b> ${denom}</span>` : ''}
+        </div>
+        ${secondaryNote}
+      `;
+    }
+    body.appendChild(burdenCard);
+    wireBurdenInfoButton(burdenCard);
+  } else {
+    // 1) Headline = active metric
+    const a = allCards[active];
+    body.appendChild(metricCard(a.label, a.value, a.unit, true, active, a.burden));
+  }
+
+  // 2) Remaining income metrics as full-width cards (skip if active is burden)
   ['Median_tot_hhd_inc_weekly', 'Median_tot_fam_inc_weekly', 'Median_tot_prsnl_inc_weekly']
     .filter(k => k !== active)
     .forEach(k => {
       const c = allCards[k];
-      body.appendChild(metricCard(c.label, c.value, c.unit, false, k));
+      body.appendChild(metricCard(c.label, c.value, c.unit, false, k, c.burden));
     });
 
-  // 3) Grid: housing (non-active) + population/HH size
+  // 3) Housing metrics — full-width cards (with burden pill) when not the headline
+  ['Median_rent_weekly', 'Median_mortgage_repay_monthly']
+    .filter(k => k !== active)
+    .forEach(k => {
+      const c = allCards[k];
+      body.appendChild(metricCard(c.label, c.value, c.unit, false, null, c.burden));
+    });
+
+  // 4) Compact context grid: Population + Avg household
   const grid = document.createElement('div');
   grid.className = 'context-grid';
 
@@ -1613,18 +1962,6 @@ function renderSalPanel(rec, body) {
 
   grid.appendChild(compactCard('Population', fmt.count(rec.Tot_P_P)));
   grid.appendChild(compactCard('Avg household', rec.Average_household_size != null ? rec.Average_household_size + ' ppl' : '—'));
-
-  ['Median_rent_weekly', 'Median_mortgage_repay_monthly']
-    .filter(k => k !== active)
-    .forEach(k => {
-      const c = allCards[k];
-      if (c.value == null) {
-        grid.appendChild(compactCard(c.label, '', true));
-      } else {
-        grid.appendChild(compactCard(c.label, c.unit === 'weekly' ? fmt.weekly(c.value) : fmt.monthly(c.value)));
-      }
-    });
-
   body.appendChild(grid);
 }
 
@@ -1675,6 +2012,7 @@ function setMode(mode) {
   state.mode = mode;
   state.metricKey = METRICS[mode][0].key;
   state.searchIndex = null;
+  document.body.dataset.mode = mode;
   document.querySelectorAll('#mode-toggle .pill').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
@@ -1780,6 +2118,17 @@ function reRenderPreservingSelection() {
 
 document.querySelectorAll('.legend-tab').forEach(btn => {
   btn.addEventListener('click', () => setTab(btn.dataset.tab));
+});
+
+// Burden denominator sub-toggle
+document.querySelectorAll('#burden-against .ba-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.burdenDenominator = btn.dataset.denom;
+    document.querySelectorAll('#burden-against .ba-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.denom === state.burdenDenominator);
+    });
+    reRenderPreservingSelection();
+  });
 });
 
 // ─── COMPARE INPUT ──────────────────────────────────────────────────
@@ -1965,6 +2314,7 @@ document.addEventListener('click', e => {
 
   await loadData();
   state.metricKey = METRICS.sal[0].key;
+  document.body.dataset.mode = state.mode;
   populateMetricToggle();
   updateSearchPlaceholder();
   render();

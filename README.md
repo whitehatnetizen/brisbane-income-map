@@ -1,44 +1,58 @@
 # Greater Brisbane Income Map
 
-Interactive map of Greater Brisbane (GCCSA) showing income data per suburb and postcode. Click any area for a side-panel breakdown; toggle between two data lenses, switch metrics, compare to your own income.
+Interactive choropleth of Greater Brisbane (GCCSA) showing income, housing-cost, and housing-burden data per suburb and per postcode. Click any area for a side-panel breakdown; toggle between data lenses, switch metrics, compare against a salary or a rent figure.
 
-**Live site:** https://whitehatnetizen.github.io/brisbane-income-map/
+## Two views
 
-## What's shown
+The map can show either suburbs or postcodes. The two come from different data sources and measure income differently — they aren't directly comparable but they're complementary.
 
-| Toggle | Data | Source |
-|---|---|---|
-| **Suburbs · Census** | Median household, family, and personal weekly income; rent; mortgage; population; average household size — at SAL (Suburb and Locality) level | ABS Census 2021 General Community Profile (G02) |
-| **Postcodes · ATO** | Mean taxable income, salary/wages, total income — per postcode | ATO Taxation Statistics 2022–23, Individuals Table 6 |
+| View | Geography | Data | Source |
+|---|---|---|---|
+| **Suburbs · Census** | ABS SAL (Suburbs and Localities) | Median household, family, and personal weekly income; weekly rent; monthly mortgage; housing cost burden; population; average household size | ABS Census 2021 General Community Profile, table G02 |
+| **Postcodes · ATO** | ABS POA (Postal Areas) | Mean taxable income, mean salary/wages, mean total income (per taxpayer) | ATO Taxation Statistics 2022–23, Individuals Table 6 |
 
-Two views, two perspectives. Census reports *medians of households*; ATO reports *means of individual taxpayers*. They will rarely agree, and the gap between them is itself informative.
+Census reports medians per *household*; ATO reports means per *individual taxpayer*. A postcode where the ATO mean is well above the Census median typically has a long tail of high earners pulling the average up.
 
 ## Features
 
-- Suburb and postcode search (top of right panel)
-- Distribution choropleth across 5 metrics, with weekly / monthly / annual conversions
-- "Compare $" mode — enter a salary, see which suburbs sit above or below
-- Light and dark themes (Quiet Slate)
+- **Search** — type-ahead suburb/postcode finder at the top of the side panel
+- **Distribution mode** — choropleth shaded by quantile across the chosen metric, with weekly / monthly / annual conversions in the side panel
+- **Compare $ mode** — enter an amount and the map splits into "at or above" vs "below" the threshold (indigo / mustard — colour-blind safe)
+- **Housing-burden mode** — each suburb shaded by housing cost as a percentage of income, with three bands at 30% (stress) and 50% (severe stress) per Australia's 30/40 rule. Toggle the denominator between household income and personal income to see the difference between a couple/share-house view and a single-earner view.
+- **Information popovers** explain Household / Family / Personal income definitions and housing-burden methodology
+- **Light and dark themes**
 
 ## Running locally
 
-Browsers block `fetch()` from `file://` URLs, so the page needs an HTTP server:
+The page loads its data files via `fetch()`, which browsers block from `file://` URLs. Run any static HTTP server from the project root, for example:
 
 ```sh
 python -m http.server 8000
 ```
 
-Then open http://localhost:8000 in a browser.
+Then visit `http://localhost:8000`. The deployed site (GitHub Pages) is served over HTTPS and works directly with no setup.
+
+## Methodology notes
+
+- **Greater Brisbane GCCSA** is defined by the ABS as Brisbane LGA plus Ipswich, Logan, Moreton Bay, and Redland (and a portion of Scenic Rim and Somerset). Suburb polygons are SALs whose centroid falls inside the GCCSA boundary; postcode polygons are POAs whose centroid falls inside.
+- **Polygon simplification** uses Visvalingam-Whyatt at a 10 m tolerance, reducing GeoJSON size by roughly two-thirds with no visible difference at the map's zoom range (9–15).
+- **Housing burden** is computed at display time: median weekly rent (or median monthly mortgage × 12 ÷ 52) divided by the chosen median income figure. The 30% and 50% thresholds follow established Australian housing-policy convention. Suppressed cells (small-population suburbs) appear in grey on the map and as "n/a" in the side panel.
+- **ATO data** is published as totals (count × dollar amount) per postcode, not as a distribution, so true medians cannot be derived. The "Mean" figures are computed as total ÷ count and converted from annual to weekly for display consistency with the Census view.
 
 ## Built with
 
-- [Leaflet](https://leafletjs.com/) for the map
-- [CARTO](https://carto.com/) basemap tiles (CC-BY)
-- [shapely](https://github.com/shapely/shapely) for polygon simplification (10 m tolerance)
-- ABS Digital Atlas FeatureServer for boundary data + Census attributes
+- [Leaflet](https://leafletjs.com/) for map rendering
+- [CARTO](https://carto.com/) basemap tiles
+- ABS Digital Atlas ArcGIS FeatureServer for boundaries and Census attributes
+- [Shapely](https://github.com/shapely/shapely) for polygon simplification (Python)
 
 ## Data licences
 
-- ABS data: [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
-- ATO data: [Creative Commons Attribution 2.5 Australia](https://creativecommons.org/licenses/by/2.5/au/)
-- Boundary data (ABS ASGS Edition 3): CC-BY 4.0
+- **ABS** data — [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
+- **ATO** data — [Creative Commons Attribution 2.5 Australia](https://creativecommons.org/licenses/by/2.5/au/)
+- **ABS ASGS Edition 3** boundary files — CC-BY 4.0
+- **CARTO** basemap tiles — CC-BY (attribution shown on the map)
+
+## Disclaimer
+
+This map presents publicly available statistics for general information. Figures are from 2021 (Census) and 2022–23 (ATO) and may not reflect current conditions. Suppressed values exist where ABS or ATO privacy thresholds were not met. Burden bands are illustrative — individual circumstances will vary.
