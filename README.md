@@ -11,7 +11,7 @@ The map can show either suburbs or postcodes. The two come from different data s
 | View | Geography | Data | Source |
 |---|---|---|---|
 | **Suburbs · Census** | ABS SAL (Suburbs and Localities) | Median household, family, and personal weekly income; weekly rent; monthly mortgage; housing cost burden; population; average household size | ABS Census 2021 General Community Profile, table G02 |
-| **Postcodes · ATO** | ABS POA (Postal Areas) | Mean taxable income, mean salary/wages, mean total income (per taxpayer) | ATO Taxation Statistics 2022–23, Individuals Table 6 |
+| **Postcodes · ATO** | ABS POA (Postal Areas) | Median taxable income, median salary/wages, median total income (per taxpayer) | ATO Taxation Statistics 2022–23, Individuals Table 25 |
 
 Census reports medians per *household*; ATO reports means per *individual taxpayer*. A postcode where the ATO mean is well above the Census median typically has a long tail of high earners pulling the average up.
 
@@ -39,7 +39,7 @@ Then visit `http://localhost:8000`. The deployed site (GitHub Pages) is served o
 - **Greater Brisbane GCCSA** is defined by the ABS as Brisbane LGA plus Ipswich, Logan, Moreton Bay, and Redland (and a portion of Scenic Rim and Somerset). Suburb polygons are SALs whose centroid falls inside the GCCSA boundary; postcode polygons are POAs whose centroid falls inside.
 - **Polygon simplification** uses Visvalingam-Whyatt at a 10 m tolerance, reducing GeoJSON size by roughly two-thirds with no visible difference at the map's zoom range (9–15).
 - **Housing burden** is computed at display time: median weekly rent (or median monthly mortgage × 12 ÷ 52) divided by the chosen median income figure. The 30% and 50% thresholds follow established Australian housing-policy convention. Suppressed cells (small-population suburbs) appear in grey on the map and as "n/a" in the side panel.
-- **ATO data** is published as totals (count × dollar amount) per postcode, not as a distribution, so true medians cannot be derived. The "Mean" figures are computed as total ÷ count and converted from annual to weekly for display consistency with the Census view.
+- **ATO data** comes from Table 25 of the Taxation Statistics, which publishes count, average, and median directly per postcode. The map shows medians for like-for-like comparability with the Census-side medians. Annual figures are converted to weekly for display consistency.
 
 ## Built with
 
