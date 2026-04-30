@@ -412,6 +412,9 @@ header::after {
 }
 .legend-scale span:first-child::before { content: '↤  '; color: var(--text-muted); }
 .legend-scale span:last-child::after  { content: '  ↦'; color: var(--text-muted); }
+.legend-scale.fixed-breaks span:first-child::before,
+.legend-scale.fixed-breaks span:last-child::after { content: none; }
+.legend-scale.fixed-breaks .spacer { visibility: hidden; }
 
 /* Legend tabs — segmented pill control */
 .legend-tabs {
@@ -1098,6 +1101,8 @@ aside::-webkit-scrollbar-track { background: transparent; }
 /* ─── MODE-AWARE FOOTER ATTRIBUTION ──────────────────────────────── */
 body[data-mode="sal"] .panel-footer .source-poa { display: none; }
 body[data-mode="poa"] .panel-footer .source-sal { display: none; }
+body[data-lens="households"] .panel-footer .source-market { display: none; }
+body[data-lens="market"] .panel-footer .source-households { display: none; }
 .metric-card .primary {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.95rem;
@@ -1141,6 +1146,22 @@ body[data-mode="poa"] .panel-footer .source-sal { display: none; }
 .metric-card .breakdown b {
   color: var(--text-primary);
   font-weight: 500;
+}
+.metric-card .breakdown .delta {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+.metric-card .breakdown .delta b { color: var(--text-secondary); }
+
+.lens-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-left: 2px solid var(--border);
+  border-radius: 4px;
 }
 
 .context-grid {
@@ -1292,7 +1313,12 @@ body[data-mode="poa"] .panel-footer .source-sal { display: none; }
 <header>
   <div class="brand">
     <h1>Greater Brisbane <em>Income</em></h1>
-    <span class="tag">Census · ATO</span>
+    <span class="tag" id="brand-tag">Census · ATO</span>
+  </div>
+
+  <div class="pill-group" id="lens-toggle" role="group" aria-label="Data source">
+    <button class="pill active" data-lens="households" type="button">Census &amp; ATO</button>
+    <button class="pill" data-lens="market" type="button">RTA</button>
   </div>
 
   <div class="pill-group" id="mode-toggle" role="group" aria-label="Geography">
@@ -1365,28 +1391,30 @@ body[data-mode="poa"] .panel-footer .source-sal { display: none; }
   </div>
   <div class="panel-body" id="panel-body">
     <div class="placeholder" id="placeholder">
-      <div class="opener">Click any suburb or postcode to show its income data.</div>
-      <p>Toggle <strong>Suburbs · Census</strong> for ABS 2021 medians of weekly household, family and personal income.</p>
-      <p>Toggle <strong>Postcodes · ATO</strong> for 2022–23 mean annual taxable income drawn from individual tax returns.</p>
+      <div class="opener">Click any suburb or postcode to show its data.</div>
+      <p><strong>Households</strong> — Census 2021 (suburbs) or ATO 2022–23 (postcodes). Income, rent, mortgage and burden — what residents reported and what tax returns recorded.</p>
+      <p><strong>Market</strong> — RTA bond statistics. Median rent for new private leases, the Sep 2021 baseline, and growth since. Different population from Census-reported rent.</p>
       <div class="hint">Or use the search bar above to jump to a specific area.</div>
     </div>
   </div>
   <div class="panel-footer">
     <span><i>Boundaries</i><a href="https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3" target="_blank" rel="noopener">ABS ASGS 2021</a></span>
-    <span class="source-sal"><i>Census</i><a href="https://www.abs.gov.au/census" target="_blank" rel="noopener">ABS 2021 G02 at SAL</a></span>
-    <span class="source-poa"><i>ATO</i><a href="https://data.gov.au/data/dataset/taxation-statistics-2022-23/resource/2b6e0599-ad64-4663-ac5b-518f39487823" target="_blank" rel="noopener">Tax Stats 2022–23, Table 25</a></span>
+    <span class="source-households source-sal"><i>Census</i><a href="https://www.abs.gov.au/census" target="_blank" rel="noopener">ABS 2021 G02 at SAL</a></span>
+    <span class="source-households source-poa"><i>ATO</i><a href="https://data.gov.au/data/dataset/taxation-statistics-2022-23/resource/2b6e0599-ad64-4663-ac5b-518f39487823" target="_blank" rel="noopener">Tax Stats 2022–23, Table 25</a></span>
+    <span class="source-market"><i>RTA</i><a href="https://www.rta.qld.gov.au/forms-resources/rta-quarterly-data/median-rents-quarterly-data" target="_blank" rel="noopener">Bond statistics, Median rents</a></span>
   </div>
 </aside>
 
 <script>
 // ─── STATE ──────────────────────────────────────────────────────────
 const state = {
+  lens: 'households',                      // 'households' (Census/ATO snapshot) | 'market' (RTA rent dynamics)
   mode: 'sal',
   metricKey: null,
   theme: 'parchment',
   layer: null,
   selected: null,
-  data: { sal: null, poa: null, census: null, ato: null },
+  data: { sal: null, poa: null, census: null, ato: null, rtaSal: null, rtaPoa: null },
   tab: 'distribution',                    // 'distribution' | 'compare'
   compare: { threshold: null, unit: 'weekly' },  // threshold stored as weekly $
   searchIndex: null,                       // built lazily per mode
@@ -1394,21 +1422,42 @@ const state = {
 };
 
 // ─── METRIC DEFINITIONS ─────────────────────────────────────────────
+// Two lenses: 'households' uses Census (SAL) / ATO (POA) — 2021/2022-23 snapshot of who lives here.
+// 'market' uses RTA bond data — rent dynamics in the private rental market.
+// Keep these mutually exclusive: a metric belongs to one lens. Mixing breaks the panel's framing.
 const METRICS = {
-  sal: [
-    { key: 'Median_tot_hhd_inc_weekly',   label: 'Household',  longLabel: 'Median household income',  unit: 'weekly',  compareNoun: 'income' },
-    { key: 'Median_tot_fam_inc_weekly',   label: 'Family',     longLabel: 'Median family income',     unit: 'weekly',  compareNoun: 'income' },
-    { key: 'Median_tot_prsnl_inc_weekly', label: 'Personal',   longLabel: 'Median personal income',   unit: 'weekly',  compareNoun: 'income' },
-    { key: 'Median_rent_weekly',          label: 'Rent',       longLabel: 'Median weekly rent',       unit: 'weekly',  compareNoun: 'rent' },
-    { key: 'Median_mortgage_repay_monthly', label: 'Mortgage', longLabel: 'Median monthly mortgage',  unit: 'monthly', compareNoun: 'mortgage' },
-    { key: 'housing_burden',              label: 'Burden',     longLabel: 'Housing cost burden',      unit: 'percent', compareNoun: 'rent', isDerived: true },
-  ],
-  poa: [
-    { key: 'taxable_income_median_annual', label: 'Taxable', longLabel: 'Median taxable income',  unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
-    { key: 'salary_wages_median_annual',   label: 'Salary',  longLabel: 'Median salary or wages', unit: 'weekly', sourceUnit: 'annual', compareNoun: 'salary' },
-    { key: 'total_income_median_annual',   label: 'Total',   longLabel: 'Median total income',    unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
-  ],
+  households: {
+    sal: [
+      { key: 'Median_tot_hhd_inc_weekly',   label: 'Household',  longLabel: 'Median household income',  unit: 'weekly',  compareNoun: 'income' },
+      { key: 'Median_tot_fam_inc_weekly',   label: 'Family',     longLabel: 'Median family income',     unit: 'weekly',  compareNoun: 'income' },
+      { key: 'Median_tot_prsnl_inc_weekly', label: 'Personal',   longLabel: 'Median personal income',   unit: 'weekly',  compareNoun: 'income' },
+      { key: 'Median_rent_weekly',          label: 'Rent',       longLabel: 'Median weekly rent (Census 2021)',  unit: 'weekly',  compareNoun: 'rent' },
+      { key: 'Median_mortgage_repay_monthly', label: 'Mortgage', longLabel: 'Median monthly mortgage',  unit: 'monthly', compareNoun: 'mortgage' },
+      { key: 'housing_burden',              label: 'Burden',     longLabel: 'Housing cost burden',      unit: 'percent', compareNoun: 'rent', isDerived: true },
+    ],
+    poa: [
+      { key: 'taxable_income_median_annual', label: 'Taxable', longLabel: 'Median taxable income',  unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
+      { key: 'salary_wages_median_annual',   label: 'Salary',  longLabel: 'Median salary or wages', unit: 'weekly', sourceUnit: 'annual', compareNoun: 'salary' },
+      { key: 'total_income_median_annual',   label: 'Total',   longLabel: 'Median total income',    unit: 'weekly', sourceUnit: 'annual', compareNoun: 'income' },
+    ],
+  },
+  market: {
+    sal: [
+      { key: 'rta_rent_latest',   label: 'Latest',  longLabel: 'Median weekly rent — latest quarter',     unit: 'weekly', compareNoun: 'rent', isDerived: true },
+      { key: 'rta_rent_baseline', label: 'Sep 2021',longLabel: 'Median weekly rent — Sep 2021 baseline', unit: 'weekly', compareNoun: 'rent', isDerived: true },
+      { key: 'rent_growth_pct',   label: 'Growth',  longLabel: 'Rent growth Sep 2021 → latest',           unit: 'percent', compareNoun: 'rent growth', isDerived: true, fixedBreaks: [0, 0.2, 0.4, 0.6, 0.8, 1.0] },
+    ],
+    poa: [
+      { key: 'rta_rent_latest',   label: 'Latest',  longLabel: 'Median weekly rent — latest quarter',     unit: 'weekly', compareNoun: 'rent', isDerived: true },
+      { key: 'rta_rent_baseline', label: 'Sep 2021',longLabel: 'Median weekly rent — Sep 2021 baseline', unit: 'weekly', compareNoun: 'rent', isDerived: true },
+      { key: 'rent_growth_pct',   label: 'Growth',  longLabel: 'Rent growth Sep 2021 → latest',           unit: 'percent', compareNoun: 'rent growth', isDerived: true, fixedBreaks: [0, 0.2, 0.4, 0.6, 0.8, 1.0] },
+    ],
+  },
 };
+
+function activeMetrics() {
+  return METRICS[state.lens][state.mode];
+}
 
 // ─── COLOUR RAMPS (theme-aware) ─────────────────────────────────────
 // Single-hue terracotta — pale clay to deep oxblood
@@ -1438,6 +1487,7 @@ const fmt = {
   annual: n => '$' + Math.round(n).toLocaleString('en-AU') + '/yr',
   count: n => n == null ? '—' : Math.round(n).toLocaleString('en-AU'),
   short: n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'k' : Math.round(n),
+  percent: n => (n >= 0 ? '+' : '') + (n * 100).toFixed(1) + '%',
 };
 
 function toWeekly(value, unit) {
@@ -1487,20 +1537,23 @@ function getMetricSourceUnit(metric) {
 }
 
 function formatBy(unit, value) {
-  return unit === 'annual' ? fmt.annual(value)
+  return unit === 'annual'  ? fmt.annual(value)
        : unit === 'monthly' ? fmt.monthly(value)
+       : unit === 'percent' ? fmt.percent(value)
        : fmt.weekly(value);
 }
 
 // ─── DATA LOAD ──────────────────────────────────────────────────────
 async function loadData() {
-  const [sal, poa, census, ato] = await Promise.all([
+  const [sal, poa, census, ato, rtaSal, rtaPoa] = await Promise.all([
     fetch('data/sal.geojson').then(r => r.json()),
     fetch('data/poa.geojson').then(r => r.json()),
     fetch('data/census_sal.json').then(r => r.json()),
     fetch('data/ato_poa.json').then(r => r.json()),
+    fetch('data/rta_sal.json').then(r => r.json()),
+    fetch('data/rta_poa.json').then(r => r.json()),
   ]);
-  state.data = { sal, poa, census, ato };
+  state.data = { sal, poa, census, ato, rtaSal, rtaPoa };
 }
 
 // ─── MAP ────────────────────────────────────────────────────────────
@@ -1535,6 +1588,17 @@ function setTileLayer(theme) {
 
 // ─── RENDERING ──────────────────────────────────────────────────────
 function getMetricValue(featureProps, mode, metricKey) {
+  // RTA-derived keys are mode-agnostic — they look up a different dataset
+  if (metricKey === 'rta_rent_latest' || metricKey === 'rta_rent_baseline' || metricKey === 'rent_growth_pct') {
+    const ds = mode === 'sal' ? state.data.rtaSal : state.data.rtaPoa;
+    if (!ds) return null;
+    const code = mode === 'sal' ? featureProps.sal_code_2021 : featureProps.poa_code_2021;
+    const rec = ds.data[code];
+    if (!rec) return null;
+    if (metricKey === 'rta_rent_latest')   return rec.rent_latest;
+    if (metricKey === 'rta_rent_baseline') return rec.rent_baseline;
+    return rec.growth_pct;
+  }
   if (mode === 'sal') {
     const code = featureProps.sal_code_2021;
     const rec = state.data.census[code];
@@ -1562,16 +1626,14 @@ function render() {
   state.selected = null;
 
   const mode = state.mode;
-  const metric = METRICS[mode].find(m => m.key === state.metricKey);
+  const metric = activeMetrics().find(m => m.key === state.metricKey);
   const geojson = mode === 'sal' ? state.data.sal : state.data.poa;
-  const lookup = mode === 'sal' ? state.data.census : state.data.ato;
-  const codeKey = mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
 
   const allValues = geojson.features
-    .map(f => { const r = lookup[f.properties[codeKey]]; return r ? r[metric.key] : null; })
+    .map(f => getMetricValue(f.properties, mode, metric.key))
     .filter(v => v != null);
 
-  const breaks = quantileBreaks(allValues, RAMPS[state.theme].length);
+  const breaks = metric.fixedBreaks ? metric.fixedBreaks : quantileBreaks(allValues, RAMPS[state.theme].length);
   const ramp = RAMPS[state.theme];
 
   const hoverColor = state.theme === 'stone' ? '#e8e4dd' : '#1f1d1a';
@@ -1641,6 +1703,8 @@ function updateLegend(breaks, allValues, metric, ramp) {
 
   const burdenAgainst = document.getElementById('burden-against');
 
+  scaleEl.classList.remove('fixed-breaks');
+
   if (metric.key === 'housing_burden') {
     // 3-band ordinal scale with thresholds at 30% and 50%
     const c = BURDEN_COLORS[state.theme];
@@ -1663,6 +1727,23 @@ function updateLegend(breaks, allValues, metric, ramp) {
       });
     }
     wireLegendInfoBtn();
+  } else if (metric.fixedBreaks) {
+    if (burdenAgainst) burdenAgainst.hidden = true;
+    // Fixed-break scale: each colour band has a known threshold range.
+    // Render labels at the boundaries between bands so the colour-to-value mapping is direct.
+    titleEl.textContent = metric.longLabel + ' · ' + metric.unit;
+    barEl.innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join('');
+    scaleEl.classList.add('fixed-breaks');
+    // Half-width spacers at each end push the labels to land at colour-band boundaries.
+    // For percent scales, render breakpoints without the leading + sign (cleaner on a scale axis).
+    const tickFmt = metric.unit === 'percent'
+      ? v => Math.round(v * 100) + '%'
+      : v => formatBy(metric.unit, v);
+    const labels = metric.fixedBreaks.map(tickFmt);
+    scaleEl.innerHTML =
+      `<span class="spacer" style="flex:0.5">&nbsp;</span>` +
+      labels.map(l => `<span style="flex:1;text-align:center">${l}</span>`).join('') +
+      `<span class="spacer" style="flex:0.5">&nbsp;</span>`;
   } else {
     if (burdenAgainst) burdenAgainst.hidden = true;
     titleEl.textContent = metric.longLabel + ' · ' + metric.unit;
@@ -1722,15 +1803,11 @@ function updateCompareSummary(metric) {
 
   const sourceUnit = getMetricSourceUnit(metric);
   const thresholdWk = state.compare.threshold;
-  const lookup = state.mode === 'sal' ? state.data.census : state.data.ato;
   const features = state.mode === 'sal' ? state.data.sal.features : state.data.poa.features;
-  const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
 
   let above = 0, below = 0, suppressed = 0;
   for (const f of features) {
-    const code = f.properties[codeKey];
-    const rec = lookup[code];
-    const val = rec ? rec[metric.key] : null;
+    const val = getMetricValue(f.properties, state.mode, metric.key);
     if (val == null) { suppressed++; continue; }
     const wk = toWeekly(val, sourceUnit);
     if (wk >= thresholdWk) above++; else below++;
@@ -1755,16 +1832,27 @@ function renderPanel(name, code, rec, mode) {
   const body = document.getElementById('panel-body');
   body.innerHTML = '';
 
+  const sourceTag = state.lens === 'market'
+    ? (mode === 'sal'
+        ? `RTA · ${state.data.rtaSal && state.data.rtaSal.quarter_latest || ''}`
+        : `RTA · ${state.data.rtaPoa && state.data.rtaPoa.quarter_latest || ''}`)
+    : (mode === 'sal' ? 'Census 2021' : 'ATO 2022–23');
+
   const head = document.createElement('div');
   head.className = 'panel-head';
   head.innerHTML = `
     <h2>${name}</h2>
     <div class="ctx">
       <span class="tag">${mode === 'sal' ? 'SAL ' + code : 'Postcode ' + code}</span>
-      <span class="tag">${mode === 'sal' ? 'Census 2021' : 'ATO 2022–23'}</span>
+      <span class="tag">${sourceTag}</span>
     </div>
   `;
   body.appendChild(head);
+
+  if (state.lens === 'market') {
+    renderMarketPanel(code, body);
+    return;
+  }
 
   if (!rec) {
     const empty = document.createElement('div');
@@ -1799,12 +1887,15 @@ function metricCard(label, value, baseUnit, isHeadline = false, infoKey = null, 
     if (infoKey) wireInfoButton(card, infoKey);
     return card;
   }
-  const b = breakdown(value, baseUnit);
+  const isPercent = baseUnit === 'percent';
+  const b = isPercent ? null : breakdown(value, baseUnit);
   const primary = formatBy(baseUnit, value);
   const others = [];
-  if (baseUnit !== 'weekly') others.push(`<span><b>${fmt.weekly(b.weekly)}</b></span>`);
-  if (baseUnit !== 'monthly') others.push(`<span><b>${fmt.monthly(b.monthly)}</b></span>`);
-  if (baseUnit !== 'annual') others.push(`<span><b>${fmt.annual(b.annual)}</b></span>`);
+  if (!isPercent) {
+    if (baseUnit !== 'weekly') others.push(`<span><b>${fmt.weekly(b.weekly)}</b></span>`);
+    if (baseUnit !== 'monthly') others.push(`<span><b>${fmt.monthly(b.monthly)}</b></span>`);
+    if (baseUnit !== 'annual') others.push(`<span><b>${fmt.annual(b.annual)}</b></span>`);
+  }
 
   let burdenPillHtml = '';
   if (burden && (burden.household != null || burden.personal != null)) {
@@ -1906,11 +1997,11 @@ function renderSalPanel(rec, body) {
   };
 
   const allCards = {
-    Median_tot_hhd_inc_weekly:     { label: 'Household — median',       value: rec.Median_tot_hhd_inc_weekly,       unit: 'weekly',  group: 'income',  burden: null },
-    Median_tot_fam_inc_weekly:     { label: 'Family — median',          value: rec.Median_tot_fam_inc_weekly,       unit: 'weekly',  group: 'income',  burden: null },
-    Median_tot_prsnl_inc_weekly:   { label: 'Personal — median',        value: rec.Median_tot_prsnl_inc_weekly,     unit: 'weekly',  group: 'income',  burden: null },
-    Median_rent_weekly:            { label: 'Median rent',              value: rec.Median_rent_weekly,              unit: 'weekly',  group: 'housing', burden: rentBurden },
-    Median_mortgage_repay_monthly: { label: 'Median mortgage',          value: rec.Median_mortgage_repay_monthly,   unit: 'monthly', group: 'housing', burden: mortgageBurden },
+    Median_tot_hhd_inc_weekly:     { label: 'Household — median',  value: rec.Median_tot_hhd_inc_weekly,     unit: 'weekly',  group: 'income',  burden: null },
+    Median_tot_fam_inc_weekly:     { label: 'Family — median',     value: rec.Median_tot_fam_inc_weekly,     unit: 'weekly',  group: 'income',  burden: null },
+    Median_tot_prsnl_inc_weekly:   { label: 'Personal — median',   value: rec.Median_tot_prsnl_inc_weekly,   unit: 'weekly',  group: 'income',  burden: null },
+    Median_rent_weekly:            { label: 'Median rent',         value: rec.Median_rent_weekly,            unit: 'weekly',  group: 'housing', burden: rentBurden },
+    Median_mortgage_repay_monthly: { label: 'Median mortgage',     value: rec.Median_mortgage_repay_monthly, unit: 'monthly', group: 'housing', burden: mortgageBurden },
   };
 
   // Burden metric — synthesize an active card from rent + income
@@ -2021,19 +2112,99 @@ function renderPoaPanel(rec, body) {
   body.appendChild(grid);
 }
 
+// CPI growth Brisbane All-groups, Sep 2021 → Mar 2026 (approx, ABS series A2325847F).
+// Single constant; update when the methodology window changes.
+const CPI_BENCHMARK_PCT = 0.22;
+
+function renderMarketPanel(code, body) {
+  const ds = state.mode === 'sal' ? state.data.rtaSal : state.data.rtaPoa;
+  const rec = ds && ds.data ? ds.data[code] : null;
+  const latestQ = ds ? ds.quarter_latest : '';
+  const baselineQ = ds ? ds.quarter_baseline : 'Sep 2021';
+  const sourceNote = state.mode === 'sal'
+    ? "Median across new private-market tenancies that quarter (RTA's 'All dwellings' rollup)."
+    : "Bonds-weighted average across dwelling categories (RTA does not publish a postcode rollup).";
+
+  if (!rec || (rec.rent_latest == null && rec.rent_baseline == null)) {
+    const empty = document.createElement('div');
+    empty.className = 'suppressed';
+    empty.textContent = state.mode === 'sal'
+      ? 'No RTA bond data published for this suburb (likely below RTA suppression threshold for new bonds in any recent quarter).'
+      : 'No RTA bond data published for this postcode.';
+    body.appendChild(empty);
+    return;
+  }
+
+  const active = state.metricKey;
+  const cards = {
+    rta_rent_latest:   { label: `Median rent — ${latestQ}`,    value: rec.rent_latest,   unit: 'weekly' },
+    rta_rent_baseline: { label: `Median rent — ${baselineQ}`,  value: rec.rent_baseline, unit: 'weekly' },
+    rent_growth_pct:   { label: `Rent growth ${baselineQ} → ${latestQ}`, value: rec.growth_pct, unit: 'percent' },
+  };
+
+  const renderOne = (key, isHeadline) => {
+    const c = cards[key];
+    const card = metricCard(c.label, c.value, c.unit, isHeadline);
+    if (key === 'rent_growth_pct' && c.value != null) {
+      const note = document.createElement('div');
+      note.className = 'breakdown';
+      note.innerHTML = `<span class="delta"><b>+${(CPI_BENCHMARK_PCT * 100).toFixed(0)}%</b> CPI Brisbane same period</span>`;
+      card.appendChild(note);
+    }
+    return card;
+  };
+
+  body.appendChild(renderOne(active, true));
+  ['rta_rent_latest', 'rta_rent_baseline', 'rent_growth_pct']
+    .filter(k => k !== active)
+    .forEach(k => body.appendChild(renderOne(k, false)));
+
+  const note = document.createElement('p');
+  note.className = 'lens-note';
+  note.textContent = sourceNote + ' Different population from Census-reported rent (which pools all tenancies including long-tenured legacy rents).';
+  body.appendChild(note);
+}
+
 // ─── UI WIRING ──────────────────────────────────────────────────────
 function setMode(mode) {
   state.mode = mode;
-  state.metricKey = METRICS[mode][0].key;
+  state.metricKey = activeMetrics()[0].key;
   state.searchIndex = null;
   document.body.dataset.mode = mode;
   document.querySelectorAll('#mode-toggle .pill').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
   populateMetricToggle();
+  updateBrandTag();
   updateSearchPlaceholder();
   resetPanel();
   render();
+}
+
+function setLens(lens) {
+  state.lens = lens;
+  state.metricKey = activeMetrics()[0].key;
+  document.body.dataset.lens = lens;
+  document.querySelectorAll('#lens-toggle .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.lens === lens);
+  });
+  populateMetricToggle();
+  updateBrandTag();
+  resetPanel();
+  render();
+}
+
+function updateBrandTag() {
+  const tag = document.getElementById('brand-tag');
+  if (!tag) return;
+  if (state.lens === 'households') {
+    tag.textContent = state.mode === 'sal' ? 'Census 2021' : 'ATO 2022–23';
+  } else {
+    const q = state.mode === 'sal'
+      ? (state.data.rtaSal && state.data.rtaSal.quarter_latest)
+      : (state.data.rtaPoa && state.data.rtaPoa.quarter_latest);
+    tag.textContent = q ? `RTA · ${q}` : 'RTA';
+  }
 }
 
 function setMetric(key) {
@@ -2059,7 +2230,7 @@ function setMetric(key) {
 
 function populateMetricToggle() {
   const tog = document.getElementById('metric-toggle');
-  tog.innerHTML = METRICS[state.mode].map(m =>
+  tog.innerHTML = activeMetrics().map(m =>
     `<button class="pill${m.key === state.metricKey ? ' active' : ''}" data-metric="${m.key}" type="button">${m.label}</button>`
   ).join('');
   tog.querySelectorAll('.pill').forEach(btn => {
@@ -2091,12 +2262,21 @@ function setTheme(theme) {
 function resetPanel() {
   const body = document.getElementById('panel-body');
   const noun = state.mode === 'sal' ? 'suburb' : 'postcode';
+  let blurb;
+  if (state.lens === 'market') {
+    blurb = state.mode === 'sal'
+      ? "Suburbs view shows RTA bond statistics: median rent for new private leases (latest quarter and Sep 2021 baseline), plus growth between them."
+      : "Postcodes view shows RTA bond statistics aggregated across dwelling categories (bonds-weighted average): rent levels and growth since Sep 2021.";
+  } else {
+    blurb = state.mode === 'sal'
+      ? 'Suburbs view shows ABS Census 2021 medians: weekly household, family and personal income, plus rent, mortgage and burden.'
+      : 'Postcodes view shows ATO 2022–23 means: annual taxable, salary, and total income.';
+  }
+  const verb = state.lens === 'market' ? 'rental market data' : 'income data';
   body.innerHTML = `
     <div class="placeholder">
-      <div class="opener">Click any ${noun} to show its income data.</div>
-      <p>${state.mode === 'sal'
-        ? 'Suburbs view shows ABS Census 2021 medians: weekly household, family and personal income.'
-        : 'Postcodes view shows ATO 2022–23 means: annual taxable, salary, and total income.'}</p>
+      <div class="opener">Click any ${noun} to show its ${verb}.</div>
+      <p>${blurb}</p>
       <div class="hint">Or use the search bar above to jump to a specific ${noun}.</div>
     </div>
   `;
@@ -2104,6 +2284,9 @@ function resetPanel() {
 
 document.querySelectorAll('#mode-toggle .pill').forEach(btn => {
   btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+document.querySelectorAll('#lens-toggle .pill').forEach(btn => {
+  btn.addEventListener('click', () => setLens(btn.dataset.lens));
 });
 document.querySelectorAll('.theme-toggle .pill').forEach(btn => {
   btn.addEventListener('click', () => setTheme(btn.dataset.theme));
@@ -2327,9 +2510,11 @@ document.addEventListener('click', e => {
   setTileLayer(state.theme);
 
   await loadData();
-  state.metricKey = METRICS.sal[0].key;
+  state.metricKey = activeMetrics()[0].key;
   document.body.dataset.mode = state.mode;
+  document.body.dataset.lens = state.lens;
   populateMetricToggle();
+  updateBrandTag();
   updateSearchPlaceholder();
   render();
 })();
