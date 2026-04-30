@@ -1187,11 +1187,11 @@ aside::-webkit-scrollbar-track { background: transparent; }
   </div>
   <div class="panel-body" id="panel-body">
     <div class="placeholder" id="placeholder">
-      <div class="opener">A click reveals what a <em>suburb earns</em>.</div>
+      <div class="opener">Click any suburb or postcode to show its income data.</div>
       <p>Toggle <strong>Suburbs · Census</strong> for ABS 2021 medians of weekly household, family and personal income.</p>
       <p>Toggle <strong>Postcodes · ATO</strong> for 2022–23 mean annual taxable income drawn from individual tax returns.</p>
       <p>Two windows on the same place: medians of households versus means of taxpayers. They will rarely agree, and the gap itself is informative.</p>
-      <div class="hint">Click any suburb to view income information.</div>
+      <div class="hint">Or use the search bar above to jump to a specific area.</div>
     </div>
   </div>
   <div class="panel-footer">
@@ -1741,11 +1741,11 @@ function resetPanel() {
   const noun = state.mode === 'sal' ? 'suburb' : 'postcode';
   body.innerHTML = `
     <div class="placeholder">
-      <div class="opener">A click reveals what a <em>${noun} earns</em>.</div>
+      <div class="opener">Click any ${noun} to show its income data.</div>
       <p>${state.mode === 'sal'
         ? 'Suburbs view shows ABS Census 2021 medians: weekly household, family and personal income.'
         : 'Postcodes view shows ATO 2022–23 means: annual taxable, salary, and total income.'}</p>
-      <div class="hint">Click any ${noun} to view income information.</div>
+      <div class="hint">Or use the search bar above to jump to a specific ${noun}.</div>
     </div>
   `;
 }
