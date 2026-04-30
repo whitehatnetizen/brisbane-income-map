@@ -1249,108 +1249,19 @@ body[data-mode="poa"] .panel-footer .source-sal { display: none; }
 /* ─── MOBILE ─────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   body {
-    grid-template-rows: auto 1fr 45vh;
+    grid-template-rows: 64px auto 1fr;
     grid-template-columns: 1fr;
-    overflow: hidden;
   }
-
-  /* Header: wrap into 2 rows (brand + mode + theme on top, metric pills below) */
-  header {
-    flex-wrap: wrap;
-    padding: 10px 14px 8px;
-    gap: 10px 12px;
-    min-height: 0;
-    align-items: center;
-    height: auto;
-  }
-  .brand { order: 1; min-width: 0; padding-right: 0; }
-  .brand h1 { font-size: 1.2rem; }
-  .brand .tag { display: none; }
-  #mode-toggle { order: 2; }
-  .theme-toggle { order: 3; margin-left: auto; }
-  .theme-toggle::before { display: none; }
-  .metric-toggle-wrap {
-    order: 4;
-    width: 100%;
-    gap: 8px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .metric-pill-group {
-    flex-wrap: nowrap;
-    flex-shrink: 0;
-  }
-  .control-label {
-    font-size: 0.6rem;
-    border-right: none;
-    padding-right: 0;
-    flex-shrink: 0;
-  }
-  .control-label::before { width: 8px; height: 8px; margin-right: 6px; }
-
-  /* Touch targets: bump pill height */
-  .pill { padding: 9px 14px; }
-  .pill, .ba-pill, .cad-pill, .legend-tab { min-height: 34px; }
-  .info-btn { width: 22px; height: 22px; font-size: 1rem; }
-
-  /* Map takes middle, side panel becomes bottom drawer */
-  #map { grid-column: 1; grid-row: 2; }
+  header { overflow-x: auto; }
   aside {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
     border-left: 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 0;
-    max-height: none;
-    height: 45vh;
+    border-bottom: 1px solid var(--border);
+    max-height: 50vh;
   }
-  .panel-search { padding: 10px 14px 0; }
-  .panel-body { padding: 16px 18px 10px; gap: 12px; }
-  .panel-head h2 { font-size: 1.85rem; }
-  .panel-footer { padding: 12px 18px 14px; }
-
-  /* Legend: smaller, centred bottom-left of map */
-  .legend {
-    bottom: 12px;
-    left: 10px;
-    min-width: 0;
-    width: calc(100vw - 20px);
-    max-width: 360px;
-    padding: 12px 14px 10px;
-    font-size: 0.86rem;
-  }
-  .legend-bar { height: 10px; }
-  .legend-title { font-size: 0.72rem; }
-  .legend-scale { font-size: 0.78rem; }
-  .legend-tab { font-size: 0.7rem; padding: 7px 10px; }
-
-  /* Search dropdown stays inside the panel */
-  .search-dropdown { max-height: 240px; }
-}
-
-@media (max-width: 480px) {
-  body {
-    grid-template-rows: auto 1fr 52vh;
-  }
-  header { padding: 9px 12px 7px; gap: 8px 10px; }
-  .brand h1 { font-size: 1.05rem; }
-  .pill { font-size: 0.66rem; padding: 9px 11px; letter-spacing: 0.06em; }
-
-  /* Larger primary numbers harder to fit; let them flex */
-  .metric-card .primary { font-size: 1.7rem; }
-  .metric-card.headline .primary { font-size: 2rem; }
-  .metric-card .breakdown { gap: 12px; }
-
-  /* Burden pills wrap fluidly */
-  .burden-row { gap: 5px; }
-  .burden-pill { padding: 6px 10px; font-size: 0.74rem; }
-  .burden-pill .burden-pct { font-size: 0.86rem; }
-
-  /* Compare input bigger for fingers */
-  #compare-input { font-size: 1.05rem; padding: 8px 4px; }
-
-  /* Hide pseudo-element that conflicts on tiny screens */
-  .panel-footer::before { display: none; }
+  #map { grid-column: 1; grid-row: 3; }
+  .legend { bottom: 14px; min-width: 0; max-width: calc(100vw - 28px); }
 }
 </style>
 </head>
