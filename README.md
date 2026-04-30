@@ -2,6 +2,8 @@
 
 Interactive choropleth of Greater Brisbane (GCCSA) showing income, housing-cost, and housing-burden data per suburb and per postcode. Click any area for a side-panel breakdown; toggle between data lenses, switch metrics, compare against a salary or a rent figure.
 
+> **Best viewed on desktop.** The interface is dense by design — multiple toggles, a side panel, and a floating legend. Mobile is functional but cramped.
+
 ## Two views
 
 The map can show either suburbs or postcodes. The two come from different data sources and measure income differently — they aren't directly comparable but they're complementary.

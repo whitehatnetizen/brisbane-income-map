@@ -1247,25 +1247,47 @@ body[data-mode="poa"] .panel-footer .source-sal { display: none; }
 }
 
 /* ─── MOBILE ─────────────────────────────────────────────────────── */
+.mobile-notice { display: none; }
+
 @media (max-width: 900px) {
   body {
-    grid-template-rows: 64px auto 1fr;
+    grid-template-rows: 30px 64px auto 1fr;
     grid-template-columns: 1fr;
   }
-  header { overflow-x: auto; }
+  .mobile-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    grid-row: 1;
+    grid-column: 1;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    padding: 0 14px;
+    text-align: center;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 1001;
+  }
+  .mobile-notice em { color: var(--jacaranda); font-style: normal; font-weight: 500; margin-right: 5px; }
+  header { grid-row: 2; overflow-x: auto; }
   aside {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     border-left: 0;
     border-bottom: 1px solid var(--border);
     max-height: 50vh;
   }
-  #map { grid-column: 1; grid-row: 3; }
+  #map { grid-column: 1; grid-row: 4; }
   .legend { bottom: 14px; min-width: 0; max-width: calc(100vw - 28px); }
 }
 </style>
 </head>
 <body>
+
+<div class="mobile-notice"><em>Note</em>Best viewed on desktop</div>
 
 <header>
   <div class="brand">
