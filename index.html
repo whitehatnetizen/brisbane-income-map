@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="parchment">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Greater Brisbane Income Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="lib/leaflet.css" />
+<script src="lib/leaflet.js"></script>
+<style>
+/* ─── THEME TOKENS · QUIET SLATE ───────────────────────────────────────
+   Light  = warm off-white + charcoal text + terracotta accent
+   Dark   = deep slate + warm cream text + terracotta accent
+   One accent (terracotta) plus muted slate-grey for secondary controls.
+   The data-theme keys stay "parchment" / "stone" so saved prefs survive. */
+
+:root, [data-theme="parchment"] {
+  --bg-deep: #f4f1ec;
+  --bg-primary: #ebe7df;
+  --bg-card: #ffffff;
+  --bg-elevated: #f0ebe2;
+  --border: #d8d2c5;
+  --border-light: #e3ddd0;
+  --text-primary: #1f1d1a;
+  --text-secondary: #6a665e;
+  --text-muted: #9c968a;
+
+  --sandstone: #c25c4d;
+  --sandstone-soft: #d97a68;
+  --jacaranda: #c25c4d;
+  --jacaranda-soft: #d97a68;
+  --river: #6a665e;
+  --river-soft: #8e887e;
+
+  --suppressed: #d8d2c5;
+  --above: #5b8a5f;
+  --above-soft: #c5d6c0;
+  --below: #a85a5a;
+  --below-soft: #d8c0c0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  color-scheme: light;
+}
+
+[data-theme="stone"] {
+  --bg-deep: #181614;
+  --bg-primary: #1f1d1b;
+  --bg-card: #232120;
+  --bg-elevated: #2c2a28;
+  --border: #383532;
+  --border-light: #44413e;
+  --text-primary: #e8e4dd;
+  --text-secondary: #9c968a;
+  --text-muted: #6f6c66;
+
+  --sandstone: #d97a68;
+  --sandstone-soft: #c25c4d;
+  --jacaranda: #d97a68;
+  --jacaranda-soft: #c25c4d;
+  --river: #9c968a;
+  --river-soft: #6f6c66;
+
+  --suppressed: #383532;
+  --above: #7eb088;
+  --above-soft: #4a6a52;
+  --below: #c87878;
+  --below-soft: #6e4646;
+  --shadow: 0 3px 18px rgba(0,0,0,0.36);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::selection { background: var(--jacaranda); color: var(--bg-card); }
+
+html, body { height: 100%; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 68px 1fr;
+  grid-template-columns: 1fr 460px;
+  transition: background 0.3s ease, color 0.3s ease;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle paper grain on parchment theme */
+[data-theme="parchment"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.40  0 0 0 0 0.36  0 0 0 0 0.30  0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+}
+[data-theme="stone"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.50  0 0 0 0 0.42  0 0 0 0.05 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+}
+
+/* ─── HEADER ─────────────────────────────────────────────────────── */
+header {
+  grid-column: 1 / -1;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 26px;
+  gap: 22px;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--sandstone) 12%, var(--jacaranda) 50%, var(--river) 88%, transparent 100%);
+  opacity: 0.45;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding-right: 6px;
+}
+.brand h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.brand h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--jacaranda);
+  position: relative;
+}
+.brand h1 em::after {
+  content: '·';
+  position: absolute;
+  right: -0.6ch;
+  top: -0.05em;
+  color: var(--sandstone);
+  font-style: normal;
+  opacity: 0.7;
+}
+.brand .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── TOGGLE PILLS (mode + theme + metric) ───────────────────────── */
+.pill-group, .metric-pill-group, .theme-toggle {
+  display: flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px;
+}
+.metric-pill-group { gap: 1px; }
+
+.pill {
+  border: none;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 7px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.25s ease, transform 0.1s ease, box-shadow 0.25s ease;
+  white-space: nowrap;
+}
+.pill:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(120, 100, 80, 0.06);
+}
+.pill:active:not(.active) { transform: translateY(0.5px); }
+.pill.active {
+  background: var(--river);
+  color: var(--bg-card);
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.metric-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+}
+.control-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-right: 2px;
+  border-right: 1px solid var(--border);
+  padding-right: 11px;
+  position: relative;
+}
+.control-label::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sandstone) 0%, var(--jacaranda) 100%);
+  margin-right: 7px;
+  vertical-align: -1px;
+  box-shadow: 0 0 6px rgba(110, 77, 138, 0.35);
+}
+.metric-pill-group .pill.active {
+  background: var(--jacaranda);
+  color: var(--bg-card);
+}
+[data-theme="stone"] .metric-pill-group .pill.active {
+  background: var(--jacaranda);
+  color: var(--bg-deep);
+}
+
+.theme-toggle {
+  margin-left: auto;
+  position: relative;
+}
+.theme-toggle::before {
+  content: 'theme';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.theme-toggle:hover::before { opacity: 1; }
+.theme-toggle .pill.active {
+  background: var(--sandstone);
+}
+[data-theme="stone"] .theme-toggle .pill.active {
+  background: var(--sandstone);
+  color: var(--bg-deep);
+}
+
+.spacer { flex: 1; }
+
+/* ─── MAP ────────────────────────────────────────────────────────── */
+#map {
+  grid-column: 1;
+  grid-row: 2;
+  background: var(--bg-deep);
+  position: relative;
+}
+.leaflet-container {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-deep);
+}
+[data-theme="parchment"] .leaflet-tile-pane {
+  filter: saturate(0.32) brightness(0.99) contrast(0.93);
+  transition: filter 0.4s ease;
+}
+[data-theme="stone"] .leaflet-tile-pane {
+  filter: saturate(0.28) brightness(0.72) contrast(1.1);
+  transition: filter 0.4s ease;
+}
+
+.leaflet-control-zoom { box-shadow: var(--shadow) !important; border: 1px solid var(--border) !important; border-radius: 4px !important; overflow: hidden; }
+.leaflet-control-zoom a {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-light) !important;
+  font-family: 'Cormorant Garamond', serif !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--bg-elevated) !important;
+  color: var(--jacaranda) !important;
+}
+.leaflet-control-attribution {
+  background: var(--bg-card) !important;
+  color: var(--text-muted) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.58rem !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.02em !important;
+  padding: 2px 8px !important;
+  border-top-left-radius: 3px !important;
+  border-left: 1px solid var(--border) !important;
+  border-top: 1px solid var(--border) !important;
+}
+.leaflet-control-attribution a { color: var(--text-secondary) !important; text-decoration: none !important; }
+.leaflet-control-attribution a:hover { color: var(--jacaranda) !important; }
+
+/* ─── LEGEND (overlay on map) ────────────────────────────────────── */
+.legend {
+  position: absolute;
+  bottom: 28px;
+  left: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 22px 16px;
+  box-shadow: var(--shadow-lg);
+  font-size: 1rem;
+  z-index: 500;
+  min-width: 380px;
+  backdrop-filter: blur(8px);
+}
+.legend::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  pointer-events: none;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--sandstone) 0%, transparent 30%, transparent 70%, var(--jacaranda) 100%) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0.35;
+}
+.legend-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.legend-title::before {
+  content: '◆';
+  color: var(--jacaranda);
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.legend-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  position: relative;
+}
+.legend-bar div {
+  flex: 1;
+  position: relative;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.legend-bar div:hover { filter: brightness(1.08); transform: scaleY(1.4); transform-origin: center bottom; }
+.legend-bar div + div { border-left: 1px solid rgba(255,255,255,0.05); }
+.legend-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  font-feature-settings: 'tnum' 1;
+}
+.legend-scale span:first-child::before { content: '↤  '; color: var(--text-muted); }
+.legend-scale span:last-child::after  { content: '  ↦'; color: var(--text-muted); }
+
+/* Legend tabs — segmented pill control */
+.legend-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 11px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px;
+}
+.legend-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 7px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 100px;
+  transition: background 0.2s ease, color 0.15s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.legend-tab:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(120, 100, 80, 0.06);
+}
+.legend-tab:active:not(.active) { transform: translateY(0.5px); }
+.legend-tab.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+[data-theme="stone"] .legend-tab.active {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  padding: 4px 11px;
+}
+.legend-tab .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.45;
+  transition: background 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+.legend-tab[data-tab="distribution"].active .dot {
+  background: var(--sandstone);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--sandstone);
+}
+.legend-tab[data-tab="compare"].active .dot {
+  background: var(--jacaranda);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--jacaranda);
+}
+
+/* Compare pane */
+.compare-input-row {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 4px 4px 10px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.compare-input-row:focus-within {
+  border-color: var(--jacaranda);
+  box-shadow: 0 0 0 2px rgba(110, 77, 138, 0.14);
+}
+.compare-prefix {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+#compare-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  font-feature-settings: 'tnum' 1;
+  width: 0;
+  min-width: 0;
+}
+#compare-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+#compare-input::-webkit-search-cancel-button { display: none; }
+.compare-clear {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.compare-clear:hover { background: var(--bg-card); color: var(--jacaranda); }
+
+.compare-cadence {
+  display: flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px;
+  margin-bottom: 9px;
+}
+.cad-pill {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 7px 0;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.cad-pill:hover:not(.active) { color: var(--text-primary); }
+.cad-pill.active {
+  background: var(--river);
+  color: var(--bg-card);
+  font-weight: 500;
+}
+[data-theme="stone"] .cad-pill.active { color: var(--bg-deep); }
+
+.compare-summary {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 300;
+}
+.compare-hint {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.compare-hint em { color: var(--jacaranda); font-style: italic; font-weight: 500; }
+.compare-result {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+.compare-result + .compare-result { border-top: 1px dashed var(--border-light); }
+.compare-result .swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.compare-result .swatch.above { background: var(--above); }
+.compare-result .swatch.below { background: var(--below); }
+.compare-result .swatch.suppressed { background: var(--suppressed); }
+.compare-result .label { color: var(--text-secondary); }
+.compare-result .label b { color: var(--text-primary); font-weight: 500; }
+.compare-result .count { color: var(--text-primary); font-feature-settings: 'tnum' 1; font-weight: 500; }
+
+/* Search box in sidebar */
+.panel-search {
+  position: relative;
+  padding: 12px 18px 0;
+}
+.panel-search .search-icon {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(calc(-50% + 6px));
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+.panel-search:focus-within .search-icon { color: var(--jacaranda); }
+#search-input {
+  width: 100%;
+  padding: 11px 34px 11px 36px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+#search-input:focus {
+  border-color: var(--jacaranda);
+  box-shadow: 0 0 0 2px rgba(110, 77, 138, 0.12);
+  background: var(--bg-card);
+}
+#search-input::placeholder { color: var(--text-muted); }
+#search-input::-webkit-search-cancel-button { display: none; }
+.search-clear {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(calc(-50% + 6px));
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.search-clear:hover { background: var(--bg-elevated); color: var(--jacaranda); }
+
+.search-dropdown {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: calc(100% - 4px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-lg);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 200;
+}
+.search-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 11px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.1s ease;
+}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover, .search-item.highlight {
+  background: var(--bg-elevated);
+}
+.search-item .name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+.search-item .name mark {
+  background: transparent;
+  color: var(--jacaranda);
+  font-weight: 600;
+}
+.search-item .code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.search-empty {
+  padding: 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+/* ─── PANEL ──────────────────────────────────────────────────────── */
+aside {
+  grid-column: 2;
+  grid-row: 2;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+aside::-webkit-scrollbar { width: 8px; }
+aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+aside::-webkit-scrollbar-track { background: transparent; }
+
+.panel-body {
+  padding: 24px 26px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-head {
+  position: relative;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-light);
+  animation: fadeInUp 0.35s cubic-bezier(.2,.7,.2,1);
+}
+.panel-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 32px;
+  height: 1px;
+  background: var(--jacaranda);
+  opacity: 0.65;
+}
+.panel-head h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.2rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+.panel-head .ctx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  margin-top: 11px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.panel-head .ctx .tag {
+  background: var(--bg-elevated);
+  padding: 3px 9px;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+  font-feature-settings: 'tnum' 1;
+}
+.panel-head .ctx .tag:first-child {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── PLACEHOLDER ────────────────────────────────────────────────── */
+.placeholder {
+  color: var(--text-secondary);
+  font-size: 1.12rem;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeIn 0.5s ease;
+  padding-top: 4px;
+}
+.placeholder .opener {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.85rem;
+  line-height: 1.18;
+  color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin-bottom: 2px;
+}
+.placeholder .opener em {
+  color: var(--jacaranda);
+  font-style: italic;
+  font-weight: 400;
+}
+.placeholder .opener::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--sandstone);
+  margin-top: 14px;
+  opacity: 0.6;
+}
+.placeholder p { color: var(--text-secondary); }
+.placeholder p strong { color: var(--text-primary); font-weight: 600; }
+.placeholder .hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.placeholder .hint::before {
+  content: '';
+  flex: 0 0 18px;
+  height: 1px;
+  background: var(--text-muted);
+  opacity: 0.4;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ─── METRIC CARDS ───────────────────────────────────────────────── */
+.metric-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 13px 16px;
+  animation: fadeInUp 0.4s cubic-bezier(.2,.7,.2,1) backwards;
+  transition: border-color 0.2s ease;
+}
+.metric-card:nth-child(2) { animation-delay: 0.04s; }
+.metric-card:nth-child(3) { animation-delay: 0.08s; }
+.metric-card:nth-child(4) { animation-delay: 0.12s; }
+.metric-card:nth-child(5) { animation-delay: 0.16s; }
+.metric-card:nth-child(6) { animation-delay: 0.20s; }
+
+.metric-card.headline {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 16px 18px 16px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.metric-card.headline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--sandstone) 0%, var(--jacaranda) 100%);
+}
+.metric-card.headline::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, var(--jacaranda) 0%, transparent 65%);
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+.metric-card h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.metric-card.headline h3::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--jacaranda);
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+/* Info button next to certain metric headers */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0 0 1px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.info-btn:hover, .info-btn.active {
+  background: var(--jacaranda);
+  color: var(--bg-card);
+  border-color: var(--jacaranda);
+}
+.info-popover {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--jacaranda);
+  border-radius: 4px;
+  padding: 12px 15px;
+  margin-top: 11px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  animation: fadeInUp 0.22s cubic-bezier(.2,.7,.2,1);
+}
+.info-popover em { color: var(--jacaranda); font-weight: 500; }
+.metric-card .primary {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.95rem;
+  font-weight: 500;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+.metric-card.headline .primary { font-size: 2.4rem; }
+.metric-card .primary .unit-tail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5em;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-left: 0.25em;
+  vertical-align: 0.25em;
+  text-transform: lowercase;
+}
+.metric-card .breakdown {
+  display: flex;
+  gap: 18px;
+  margin-top: 11px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 300;
+  font-feature-settings: 'tnum' 1;
+}
+.metric-card .breakdown span { display: flex; align-items: baseline; gap: 5px; }
+.metric-card .breakdown span::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.55;
+}
+.metric-card .breakdown b {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.context-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.context-grid .metric-card { padding: 11px 13px; }
+.context-grid .metric-card h3 { margin-bottom: 5px; }
+.context-grid .metric-card .primary {
+  font-size: 1.25rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.note-card {
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  padding: 13px 15px 14px;
+  animation: fadeInUp 0.4s cubic-bezier(.2,.7,.2,1) 0.24s backwards;
+}
+.note-card h3 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.2rem;
+  font-style: italic;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.note-card p {
+  font-size: 1.02rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.note-card em { font-style: italic; color: var(--jacaranda); font-weight: 500; }
+
+.suppressed {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ─── PANEL FOOTER ───────────────────────────────────────────────── */
+.panel-footer {
+  border-top: 1px solid var(--border-light);
+  padding: 16px 26px 18px;
+  font-size: 0.86rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  letter-spacing: 0.04em;
+  position: relative;
+}
+.panel-footer::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 26px;
+  width: 24px;
+  height: 1px;
+  background: var(--sandstone);
+  opacity: 0.55;
+}
+.panel-footer span { display: flex; }
+.panel-footer span > i {
+  flex: 0 0 96px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  font-style: normal;
+  align-self: center;
+}
+.panel-footer a {
+  color: var(--river);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  border-bottom: 1px dotted transparent;
+}
+.panel-footer a:hover {
+  color: var(--jacaranda);
+  border-bottom-color: var(--jacaranda);
+}
+
+/* ─── LEAFLET POLYGON STYLES ─────────────────────────────────────── */
+.leaflet-interactive {
+  transition: stroke-width 0.15s ease, stroke-opacity 0.15s ease, fill-opacity 0.15s ease, filter 0.2s ease;
+}
+[data-theme="parchment"] .leaflet-interactive.selected-path {
+  filter: drop-shadow(0 0 6px rgba(194, 92, 77, 0.5));
+}
+[data-theme="stone"] .leaflet-interactive.selected-path {
+  filter: drop-shadow(0 0 8px rgba(232, 145, 120, 0.55));
+}
+
+/* ─── MOBILE ─────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  body {
+    grid-template-rows: 64px auto 1fr;
+    grid-template-columns: 1fr;
+  }
+  header { overflow-x: auto; }
+  aside {
+    grid-column: 1;
+    grid-row: 2;
+    border-left: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 50vh;
+  }
+  #map { grid-column: 1; grid-row: 3; }
+  .legend { bottom: 14px; min-width: 0; max-width: calc(100vw - 28px); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Greater Brisbane <em>Income</em></h1>
+    <span class="tag">Census · ATO</span>
+  </div>
+
+  <div class="pill-group" id="mode-toggle" role="group" aria-label="Geography">
+    <button class="pill active" data-mode="sal" type="button">Suburbs</button>
+    <button class="pill" data-mode="poa" type="button">Postcodes</button>
+  </div>
+
+  <div class="metric-toggle-wrap">
+    <span class="control-label">Colour by</span>
+    <div class="metric-pill-group" id="metric-toggle" role="group" aria-label="Metric — drives map shading"></div>
+  </div>
+
+  <div class="theme-toggle" role="group" aria-label="Theme">
+    <button class="pill active" data-theme="parchment" type="button">Light</button>
+    <button class="pill" data-theme="stone" type="button">Dark</button>
+  </div>
+</header>
+
+<div id="map">
+  <div class="legend" id="legend">
+    <div class="legend-tabs" role="tablist">
+      <button class="legend-tab active" data-tab="distribution" type="button" role="tab"><span class="dot"></span>Distribution</button>
+      <button class="legend-tab" data-tab="compare" type="button" role="tab"><span class="dot"></span>Compare $</button>
+    </div>
+
+    <div class="legend-pane" data-pane="distribution">
+      <div class="legend-title" id="legend-title">Loading…</div>
+      <div class="legend-bar" id="legend-bar"></div>
+      <div class="legend-scale">
+        <span id="legend-min">—</span>
+        <span id="legend-max">—</span>
+      </div>
+    </div>
+
+    <div class="legend-pane" data-pane="compare" hidden>
+      <div class="legend-title">Compare to my income</div>
+      <div class="compare-input-row">
+        <span class="compare-prefix">$</span>
+        <input type="text" id="compare-input" inputmode="decimal" placeholder="e.g. 1,500" autocomplete="off" />
+        <button class="compare-clear" id="compare-clear" type="button" aria-label="Clear" hidden>×</button>
+      </div>
+      <div class="compare-cadence" id="compare-cadence">
+        <button class="cad-pill active" data-unit="weekly" type="button">Weekly</button>
+        <button class="cad-pill" data-unit="monthly" type="button">Monthly</button>
+        <button class="cad-pill" data-unit="annual" type="button">Annually</button>
+      </div>
+      <div class="compare-summary" id="compare-summary">
+        <div class="compare-hint">Enter an amount to colour suburbs <em>above</em> in green and <em>below</em> in red, against the <span id="compare-metric-label">selected metric</span>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="panel">
+  <div class="panel-search">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2" />
+      <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+    </svg>
+    <input type="search" id="search-input" autocomplete="off" spellcheck="false" placeholder="Search suburbs…" />
+    <button class="search-clear" id="search-clear" type="button" aria-label="Clear" hidden>×</button>
+    <div class="search-dropdown" id="search-dropdown" hidden></div>
+  </div>
+  <div class="panel-body" id="panel-body">
+    <div class="placeholder" id="placeholder">
+      <div class="opener">A click reveals what a <em>suburb earns</em>.</div>
+      <p>Toggle <strong>Suburbs · Census</strong> for ABS 2021 medians of weekly household, family and personal income.</p>
+      <p>Toggle <strong>Postcodes · ATO</strong> for 2022–23 mean annual taxable income drawn from individual tax returns.</p>
+      <p>Two windows on the same place: medians of households versus means of taxpayers. They will rarely agree, and the gap itself is informative.</p>
+      <div class="hint">Click any suburb to view income information.</div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <span><i>Boundaries</i><a href="https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3" target="_blank" rel="noopener">ABS ASGS 2021</a></span>
+    <span><i>Census</i><a href="https://www.abs.gov.au/census" target="_blank" rel="noopener">ABS 2021 G02 at SAL</a></span>
+    <span><i>ATO</i><a href="https://data.gov.au/data/dataset/taxation-statistics-postcode-data" target="_blank" rel="noopener">Tax Stats 2022–23, Table 6</a></span>
+  </div>
+</aside>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────
+const state = {
+  mode: 'sal',
+  metricKey: null,
+  theme: 'parchment',
+  layer: null,
+  selected: null,
+  data: { sal: null, poa: null, census: null, ato: null },
+  tab: 'distribution',                    // 'distribution' | 'compare'
+  compare: { threshold: null, unit: 'weekly' },  // threshold stored as weekly $
+  searchIndex: null,                       // built lazily per mode
+};
+
+// ─── METRIC DEFINITIONS ─────────────────────────────────────────────
+const METRICS = {
+  sal: [
+    { key: 'Median_tot_hhd_inc_weekly',   label: 'Household',  longLabel: 'Median household income',  unit: 'weekly' },
+    { key: 'Median_tot_fam_inc_weekly',   label: 'Family',     longLabel: 'Median family income',     unit: 'weekly' },
+    { key: 'Median_tot_prsnl_inc_weekly', label: 'Personal',   longLabel: 'Median personal income',   unit: 'weekly' },
+    { key: 'Median_rent_weekly',          label: 'Rent',       longLabel: 'Median weekly rent',       unit: 'weekly' },
+    { key: 'Median_mortgage_repay_monthly', label: 'Mortgage', longLabel: 'Median monthly mortgage',  unit: 'monthly' },
+  ],
+  poa: [
+    { key: 'taxable_income_mean_annual', label: 'Taxable',  longLabel: 'Mean taxable income',  unit: 'weekly', sourceUnit: 'annual' },
+    { key: 'salary_wages_mean_annual',   label: 'Salary',   longLabel: 'Mean salary or wages', unit: 'weekly', sourceUnit: 'annual' },
+    { key: 'total_income_mean_annual',   label: 'Total',    longLabel: 'Mean total income',    unit: 'weekly', sourceUnit: 'annual' },
+  ],
+};
+
+// ─── COLOUR RAMPS (theme-aware) ─────────────────────────────────────
+// Single-hue terracotta — pale clay to deep oxblood
+const RAMPS = {
+  parchment: ['#f4e8e2', '#e6c8b8', '#d09e84', '#b87560', '#9c5040', '#7a3825', '#542a18'],
+  stone:     ['#2a2724', '#3e3530', '#5a4438', '#80543e', '#a86344', '#d07550', '#ee8e60'],
+};
+const SUPPRESSED_COLOR = { parchment: '#d8d2c5', stone: '#383532' };
+const COMPARE_COLORS = {
+  parchment: { above: '#5b8a5f', below: '#a85a5a' },
+  stone:     { above: '#7eb088', below: '#c87878' },
+};
+
+// ─── HELPERS ────────────────────────────────────────────────────────
+const fmt = {
+  currency: n => '$' + Math.round(n).toLocaleString('en-AU'),
+  weekly: n => '$' + Math.round(n).toLocaleString('en-AU') + '/wk',
+  monthly: n => '$' + Math.round(n).toLocaleString('en-AU') + '/mo',
+  annual: n => '$' + Math.round(n).toLocaleString('en-AU') + '/yr',
+  count: n => n == null ? '—' : Math.round(n).toLocaleString('en-AU'),
+  short: n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'k' : Math.round(n),
+};
+
+function toWeekly(value, unit) {
+  if (value == null) return null;
+  if (unit === 'weekly') return value;
+  if (unit === 'monthly') return value * 12 / 52;
+  if (unit === 'annual') return value / 52;
+  return value;
+}
+
+function breakdown(value, baseUnit) {
+  if (value == null) return null;
+  const wk = toWeekly(value, baseUnit);
+  return { weekly: wk, monthly: wk * 52 / 12, annual: wk * 52 };
+}
+
+function quantileBreaks(values, n) {
+  const sorted = values.filter(v => v != null && !isNaN(v)).sort((a, b) => a - b);
+  if (!sorted.length) return [];
+  const breaks = [];
+  for (let i = 1; i < n; i++) breaks.push(sorted[Math.floor(sorted.length * i / n)]);
+  return breaks;
+}
+
+function colourFor(value, metric, breaks, ramp) {
+  if (value == null || isNaN(value)) return SUPPRESSED_COLOR[state.theme];
+  if (isCompareActive()) {
+    const wk = toWeekly(value, getMetricSourceUnit(metric));
+    return wk >= state.compare.threshold ? COMPARE_COLORS[state.theme].above : COMPARE_COLORS[state.theme].below;
+  }
+  for (let i = 0; i < breaks.length; i++) if (value < breaks[i]) return ramp[i];
+  return ramp[ramp.length - 1];
+}
+
+function isCompareActive() {
+  return state.tab === 'compare' && state.compare.threshold != null && !isNaN(state.compare.threshold);
+}
+
+function getMetricSourceUnit(metric) {
+  return metric.sourceUnit || metric.unit;
+}
+
+function formatBy(unit, value) {
+  return unit === 'annual' ? fmt.annual(value)
+       : unit === 'monthly' ? fmt.monthly(value)
+       : fmt.weekly(value);
+}
+
+// ─── DATA LOAD ──────────────────────────────────────────────────────
+async function loadData() {
+  const [sal, poa, census, ato] = await Promise.all([
+    fetch('data/sal.geojson').then(r => r.json()),
+    fetch('data/poa.geojson').then(r => r.json()),
+    fetch('data/census_sal.json').then(r => r.json()),
+    fetch('data/ato_poa.json').then(r => r.json()),
+  ]);
+  state.data = { sal, poa, census, ato };
+}
+
+// ─── MAP ────────────────────────────────────────────────────────────
+// Greater Brisbane GCCSA bounds (with light padding) — locks the viewport to the region
+const GCCSA_BOUNDS = L.latLngBounds([[-28.45, 151.95], [-26.40, 153.70]]);
+
+const map = L.map('map', {
+  zoomControl: true,
+  attributionControl: true,
+  renderer: L.svg({ padding: 0.1 }),
+  maxBounds: GCCSA_BOUNDS,
+  maxBoundsViscosity: 1.0,
+  minZoom: 9,
+  maxZoom: 15,
+});
+map.fitBounds(L.latLngBounds([[-28.36, 152.07], [-26.45, 153.55]]), { padding: [12, 12] });
+
+const TILES = {
+  parchment: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  stone: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+};
+let tileLayer = null;
+
+function setTileLayer(theme) {
+  if (tileLayer) map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(TILES[theme], {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+}
+
+// ─── RENDERING ──────────────────────────────────────────────────────
+function getMetricValue(featureProps, mode, metricKey) {
+  if (mode === 'sal') {
+    const code = featureProps.sal_code_2021;
+    const rec = state.data.census[code];
+    return rec ? rec[metricKey] : null;
+  } else {
+    const code = featureProps.poa_code_2021;
+    const rec = state.data.ato[code];
+    return rec ? rec[metricKey] : null;
+  }
+}
+
+function render() {
+  if (state.layer) map.removeLayer(state.layer);
+  state.selected = null;
+
+  const mode = state.mode;
+  const metric = METRICS[mode].find(m => m.key === state.metricKey);
+  const geojson = mode === 'sal' ? state.data.sal : state.data.poa;
+  const lookup = mode === 'sal' ? state.data.census : state.data.ato;
+  const codeKey = mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+
+  const allValues = geojson.features
+    .map(f => { const r = lookup[f.properties[codeKey]]; return r ? r[metric.key] : null; })
+    .filter(v => v != null);
+
+  const breaks = quantileBreaks(allValues, RAMPS[state.theme].length);
+  const ramp = RAMPS[state.theme];
+
+  const hoverColor = state.theme === 'stone' ? '#e8e4dd' : '#1f1d1a';
+  const baseColor = state.theme === 'stone' ? '#3a3631' : '#9d958a';
+
+  state.layer = L.geoJSON(geojson, {
+    style: feat => {
+      const v = getMetricValue(feat.properties, mode, metric.key);
+      return {
+        fillColor: colourFor(v, metric, breaks, ramp),
+        fillOpacity: v == null ? 0.32 : (isCompareActive() ? 0.7 : 0.74),
+        color: baseColor,
+        weight: 0.4,
+        opacity: 0.45,
+      };
+    },
+    onEachFeature: (feat, layer) => {
+      layer.on({
+        mouseover: e => {
+          if (state.selected !== e.target) {
+            e.target.setStyle({ weight: 1.5, color: hoverColor, opacity: 0.95, fillOpacity: 0.85 });
+            e.target.bringToFront();
+          }
+        },
+        mouseout: e => { if (state.selected !== e.target) state.layer.resetStyle(e.target); },
+        click: e => selectFeature(e.target, feat),
+      });
+    },
+  }).addTo(map);
+
+  updateLegend(breaks, allValues, metric, ramp);
+}
+
+function selectFeature(layer, feat) {
+  if (state.selected) {
+    state.layer.resetStyle(state.selected);
+    if (state.selected._path) state.selected._path.classList.remove('selected-path');
+  }
+  state.selected = layer;
+  layer.setStyle({
+    weight: 2.5,
+    color: state.theme === 'stone' ? '#e89178' : '#c25c4d',
+    opacity: 1,
+    fillOpacity: 0.92,
+  });
+  layer.bringToFront();
+  if (layer._path) layer._path.classList.add('selected-path');
+
+  const mode = state.mode;
+  const codeKey = mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+  const nameKey = mode === 'sal' ? 'sal_name_2021' : 'poa_name_2021';
+  const code = feat.properties[codeKey];
+  const name = feat.properties[nameKey] || feat.properties[codeKey];
+  const rec = mode === 'sal' ? state.data.census[code] : state.data.ato[code];
+
+  renderPanel(name, code, rec, mode);
+}
+
+// ─── LEGEND ─────────────────────────────────────────────────────────
+function updateLegend(breaks, allValues, metric, ramp) {
+  // Distribution pane
+  document.getElementById('legend-title').textContent = metric.longLabel + ' · ' + metric.unit;
+  document.getElementById('legend-bar').innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join('');
+  let min = Math.min(...allValues);
+  let max = Math.max(...allValues);
+  if (metric.sourceUnit && metric.sourceUnit !== metric.unit) {
+    min = toWeekly(min, metric.sourceUnit);
+    max = toWeekly(max, metric.sourceUnit);
+    if (metric.unit === 'monthly') { min = min * 52 / 12; max = max * 52 / 12; }
+    if (metric.unit === 'annual')  { min = min * 52;        max = max * 52; }
+  }
+  document.getElementById('legend-min').textContent = formatBy(metric.unit, min);
+  document.getElementById('legend-max').textContent = formatBy(metric.unit, max);
+
+  // Compare pane
+  updateCompareSummary(metric);
+}
+
+function updateCompareSummary(metric) {
+  const summary = document.getElementById('compare-summary');
+  const labelEl = document.getElementById('compare-metric-label');
+  if (labelEl) labelEl.textContent = metric.longLabel.toLowerCase();
+
+  if (!isCompareActive()) {
+    summary.innerHTML = `<div class="compare-hint">Enter an amount to colour suburbs <em>above</em> in green and <em>below</em> in red, against the <span id="compare-metric-label">${metric.longLabel.toLowerCase()}</span>.</div>`;
+    return;
+  }
+
+  const sourceUnit = getMetricSourceUnit(metric);
+  const thresholdWk = state.compare.threshold;
+  const lookup = state.mode === 'sal' ? state.data.census : state.data.ato;
+  const features = state.mode === 'sal' ? state.data.sal.features : state.data.poa.features;
+  const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+
+  let above = 0, below = 0, suppressed = 0;
+  for (const f of features) {
+    const code = f.properties[codeKey];
+    const rec = lookup[code];
+    const val = rec ? rec[metric.key] : null;
+    if (val == null) { suppressed++; continue; }
+    const wk = toWeekly(val, sourceUnit);
+    if (wk >= thresholdWk) above++; else below++;
+  }
+
+  const cadence = state.compare.unit;
+  const thresholdInUnit = cadence === 'weekly' ? thresholdWk
+    : cadence === 'monthly' ? thresholdWk * 52 / 12
+    : thresholdWk * 52;
+  const thresholdStr = formatBy(cadence, thresholdInUnit);
+  const noun = state.mode === 'sal' ? 'suburb' : 'postcode';
+
+  summary.innerHTML = `
+    <div class="compare-result"><span class="swatch above"></span><span class="label">at or above <b>${thresholdStr}</b></span><span class="count">${above}</span></div>
+    <div class="compare-result"><span class="swatch below"></span><span class="label">below <b>${thresholdStr}</b></span><span class="count">${below}</span></div>
+    ${suppressed > 0 ? `<div class="compare-result"><span class="swatch suppressed"></span><span class="label">no data</span><span class="count">${suppressed}</span></div>` : ''}
+  `;
+}
+
+// ─── PANEL ──────────────────────────────────────────────────────────
+function renderPanel(name, code, rec, mode) {
+  const body = document.getElementById('panel-body');
+  body.innerHTML = '';
+
+  const head = document.createElement('div');
+  head.className = 'panel-head';
+  head.innerHTML = `
+    <h2>${name}</h2>
+    <div class="ctx">
+      <span class="tag">${mode === 'sal' ? 'SAL ' + code : 'Postcode ' + code}</span>
+      <span class="tag">${mode === 'sal' ? 'Census 2021' : 'ATO 2022–23'}</span>
+    </div>
+  `;
+  body.appendChild(head);
+
+  if (!rec) {
+    const empty = document.createElement('div');
+    empty.className = 'suppressed';
+    empty.textContent = 'No data available for this area.';
+    body.appendChild(empty);
+    return;
+  }
+
+  if (mode === 'sal') renderSalPanel(rec, body);
+  else renderPoaPanel(rec, body);
+}
+
+function dressUnit(s) {
+  // Wrap trailing "/wk" "/mo" "/yr" so it can be styled subtler
+  return s.replace(/\/(wk|mo|yr)$/, '<span class="unit-tail">/$1</span>');
+}
+
+const INFO_TEXTS = {
+  Median_tot_hhd_inc_weekly: "Combined income of <em>everyone</em> living in the dwelling — relatives, partners, share-house roommates, all counted. The widest measure.",
+  Median_tot_fam_inc_weekly: "Combined income of <em>related people only</em> — couples, parents and children, siblings. Unrelated housemates aren't counted. A house of four friends has four 'families'.",
+  Median_tot_prsnl_inc_weekly: "<em>One individual's</em> income, age 15+. Counts the person, not the household they live in.",
+};
+
+function metricCard(label, value, baseUnit, isHeadline = false, infoKey = null) {
+  const card = document.createElement('div');
+  card.className = 'metric-card' + (isHeadline ? ' headline' : '');
+  const infoBtn = infoKey && INFO_TEXTS[infoKey] ? `<button class="info-btn" type="button" aria-label="What is this?">i</button>` : '';
+  if (value == null) {
+    card.innerHTML = `<h3>${label}${infoBtn}</h3><div class="suppressed">Not available · suppressed</div>`;
+    if (infoKey) wireInfoButton(card, infoKey);
+    return card;
+  }
+  const b = breakdown(value, baseUnit);
+  const primary = formatBy(baseUnit, value);
+  const others = [];
+  if (baseUnit !== 'weekly') others.push(`<span><b>${fmt.weekly(b.weekly)}</b></span>`);
+  if (baseUnit !== 'monthly') others.push(`<span><b>${fmt.monthly(b.monthly)}</b></span>`);
+  if (baseUnit !== 'annual') others.push(`<span><b>${fmt.annual(b.annual)}</b></span>`);
+  card.innerHTML = `
+    <h3>${label}${infoBtn}</h3>
+    <div class="primary">${dressUnit(primary)}</div>
+    <div class="breakdown">${others.join('')}</div>
+  `;
+  if (infoKey) wireInfoButton(card, infoKey);
+  return card;
+}
+
+function wireInfoButton(card, infoKey) {
+  const btn = card.querySelector('.info-btn');
+  if (!btn) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const existing = card.querySelector('.info-popover');
+    document.querySelectorAll('.info-popover').forEach(p => { if (p !== existing) p.remove(); });
+    document.querySelectorAll('.info-btn.active').forEach(b => { if (b !== btn) b.classList.remove('active'); });
+    if (existing) {
+      existing.remove();
+      btn.classList.remove('active');
+      return;
+    }
+    const pop = document.createElement('div');
+    pop.className = 'info-popover';
+    pop.innerHTML = INFO_TEXTS[infoKey];
+    pop.addEventListener('click', ev => ev.stopPropagation());
+    card.appendChild(pop);
+    btn.classList.add('active');
+  });
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.info-popover').forEach(p => p.remove());
+  document.querySelectorAll('.info-btn.active').forEach(b => b.classList.remove('active'));
+});
+
+function renderSalPanel(rec, body) {
+  const active = state.metricKey;
+  const allCards = {
+    Median_tot_hhd_inc_weekly:     { label: 'Household — median',       value: rec.Median_tot_hhd_inc_weekly,       unit: 'weekly',  group: 'income' },
+    Median_tot_fam_inc_weekly:     { label: 'Family — median',          value: rec.Median_tot_fam_inc_weekly,       unit: 'weekly',  group: 'income' },
+    Median_tot_prsnl_inc_weekly:   { label: 'Personal — median',        value: rec.Median_tot_prsnl_inc_weekly,     unit: 'weekly',  group: 'income' },
+    Median_rent_weekly:            { label: 'Median rent',              value: rec.Median_rent_weekly,              unit: 'weekly',  group: 'housing' },
+    Median_mortgage_repay_monthly: { label: 'Median mortgage',          value: rec.Median_mortgage_repay_monthly,   unit: 'monthly', group: 'housing' },
+  };
+
+  // 1) Headline = active metric
+  const a = allCards[active];
+  body.appendChild(metricCard(a.label, a.value, a.unit, true, active));
+
+  // 2) Remaining income metrics as full-width cards
+  ['Median_tot_hhd_inc_weekly', 'Median_tot_fam_inc_weekly', 'Median_tot_prsnl_inc_weekly']
+    .filter(k => k !== active)
+    .forEach(k => {
+      const c = allCards[k];
+      body.appendChild(metricCard(c.label, c.value, c.unit, false, k));
+    });
+
+  // 3) Grid: housing (non-active) + population/HH size
+  const grid = document.createElement('div');
+  grid.className = 'context-grid';
+
+  function compactCard(label, primaryHtml, suppressed) {
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    card.innerHTML = suppressed
+      ? `<h3>${label}</h3><div class="suppressed">n/a</div>`
+      : `<h3>${label}</h3><div class="primary">${primaryHtml}</div>`;
+    return card;
+  }
+
+  grid.appendChild(compactCard('Population', fmt.count(rec.Tot_P_P)));
+  grid.appendChild(compactCard('Avg household', rec.Average_household_size != null ? rec.Average_household_size + ' ppl' : '—'));
+
+  ['Median_rent_weekly', 'Median_mortgage_repay_monthly']
+    .filter(k => k !== active)
+    .forEach(k => {
+      const c = allCards[k];
+      if (c.value == null) {
+        grid.appendChild(compactCard(c.label, '', true));
+      } else {
+        grid.appendChild(compactCard(c.label, c.unit === 'weekly' ? fmt.weekly(c.value) : fmt.monthly(c.value)));
+      }
+    });
+
+  body.appendChild(grid);
+}
+
+function renderPoaPanel(rec, body) {
+  const active = state.metricKey;
+  const toWk = v => v == null ? null : v / 52;
+  const allCards = {
+    taxable_income_mean_annual: { label: 'Taxable income — mean',   value: toWk(rec.taxable_income_mean_annual) },
+    salary_wages_mean_annual:   { label: 'Salary or wages — mean',  value: toWk(rec.salary_wages_mean_annual) },
+    total_income_mean_annual:   { label: 'Total income — mean',     value: toWk(rec.total_income_mean_annual) },
+  };
+
+  const a = allCards[active];
+  body.appendChild(metricCard(a.label, a.value, 'weekly', true));
+
+  ['taxable_income_mean_annual', 'salary_wages_mean_annual', 'total_income_mean_annual']
+    .filter(k => k !== active)
+    .forEach(k => {
+      body.appendChild(metricCard(allCards[k].label, allCards[k].value, 'weekly', false));
+    });
+
+  const grid = document.createElement('div');
+  grid.className = 'context-grid';
+
+  const tp = document.createElement('div');
+  tp.className = 'metric-card';
+  tp.innerHTML = `<h3>Taxpayers</h3><div class="primary">${fmt.count(rec.individuals_count)}</div>`;
+  grid.appendChild(tp);
+
+  const taxable = document.createElement('div');
+  taxable.className = 'metric-card';
+  taxable.innerHTML = `<h3>With taxable income</h3><div class="primary">${fmt.count(rec.taxable_income_count)}</div>`;
+  grid.appendChild(taxable);
+
+  body.appendChild(grid);
+
+  const note = document.createElement('div');
+  note.className = 'note-card';
+  note.innerHTML = `
+    <h3>Why mean, not median?</h3>
+    <p>ATO Table 6 publishes total income summed per postcode — not its distribution — so an exact median can't be derived. <em>Means are pulled upward by high earners</em>. Compare with Census medians in the Suburbs view to triangulate.</p>
+  `;
+  body.appendChild(note);
+}
+
+// ─── UI WIRING ──────────────────────────────────────────────────────
+function setMode(mode) {
+  state.mode = mode;
+  state.metricKey = METRICS[mode][0].key;
+  state.searchIndex = null;
+  document.querySelectorAll('#mode-toggle .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  populateMetricToggle();
+  updateSearchPlaceholder();
+  resetPanel();
+  render();
+}
+
+function setMetric(key) {
+  state.metricKey = key;
+  document.querySelectorAll('#metric-toggle .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.metric === key);
+  });
+  if (state.selected) {
+    // Re-render layer styling but keep selection's panel content
+    const sel = state.selected;
+    const feat = sel.feature;
+    render();
+    // Re-find and reselect by code
+    const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+    const code = feat.properties[codeKey];
+    state.layer.eachLayer(l => {
+      if (l.feature.properties[codeKey] === code) selectFeature(l, l.feature);
+    });
+  } else {
+    render();
+  }
+}
+
+function populateMetricToggle() {
+  const tog = document.getElementById('metric-toggle');
+  tog.innerHTML = METRICS[state.mode].map(m =>
+    `<button class="pill${m.key === state.metricKey ? ' active' : ''}" data-metric="${m.key}" type="button">${m.label}</button>`
+  ).join('');
+  tog.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => setMetric(btn.dataset.metric));
+  });
+}
+
+function setTheme(theme) {
+  state.theme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('brisbane-income-map-theme', theme);
+  document.querySelectorAll('.theme-toggle .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === theme);
+  });
+  setTileLayer(theme);
+  if (state.data.sal) {
+    const prevSelected = state.selected ? state.selected.feature : null;
+    render();
+    if (prevSelected) {
+      const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+      const code = prevSelected.properties[codeKey];
+      state.layer.eachLayer(l => {
+        if (l.feature.properties[codeKey] === code) selectFeature(l, l.feature);
+      });
+    }
+  }
+}
+
+function resetPanel() {
+  const body = document.getElementById('panel-body');
+  const noun = state.mode === 'sal' ? 'suburb' : 'postcode';
+  body.innerHTML = `
+    <div class="placeholder">
+      <div class="opener">A click reveals what a <em>${noun} earns</em>.</div>
+      <p>${state.mode === 'sal'
+        ? 'Suburbs view shows ABS Census 2021 medians: weekly household, family and personal income.'
+        : 'Postcodes view shows ATO 2022–23 means: annual taxable, salary, and total income.'}</p>
+      <div class="hint">Click any ${noun} to view income information.</div>
+    </div>
+  `;
+}
+
+document.querySelectorAll('#mode-toggle .pill').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+document.querySelectorAll('.theme-toggle .pill').forEach(btn => {
+  btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+});
+
+// ─── LEGEND TABS ────────────────────────────────────────────────────
+function setTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.legend-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.legend-pane').forEach(p => p.hidden = p.dataset.pane !== tab);
+  // Re-render with current (or absent) compare colouring + reselect if needed
+  reRenderPreservingSelection();
+}
+
+function reRenderPreservingSelection() {
+  const prev = state.selected ? state.selected.feature : null;
+  render();
+  if (prev) {
+    const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+    const code = prev.properties[codeKey];
+    state.layer.eachLayer(l => {
+      if (l.feature.properties[codeKey] === code) selectFeature(l, l.feature);
+    });
+  }
+}
+
+document.querySelectorAll('.legend-tab').forEach(btn => {
+  btn.addEventListener('click', () => setTab(btn.dataset.tab));
+});
+
+// ─── COMPARE INPUT ──────────────────────────────────────────────────
+const compareInput = document.getElementById('compare-input');
+const compareClear = document.getElementById('compare-clear');
+
+function setCompareThreshold(num, unit) {
+  if (num == null || isNaN(num) || num <= 0) {
+    state.compare.threshold = null;
+  } else {
+    state.compare.threshold = unit === 'weekly' ? num
+      : unit === 'monthly' ? num * 12 / 52
+      : num / 52;
+  }
+}
+
+function parseCompareInput() {
+  const raw = compareInput.value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(raw);
+  setCompareThreshold(num, state.compare.unit);
+  compareClear.hidden = !compareInput.value;
+  reRenderPreservingSelection();
+}
+
+function formatCompareInputDisplay() {
+  // Reformat the input with thousands separator while preserving cursor position approximately
+  const cursor = compareInput.selectionStart;
+  const before = compareInput.value;
+  const digits = before.replace(/[^0-9.]/g, '');
+  if (!digits) return;
+  const num = parseFloat(digits);
+  if (isNaN(num)) return;
+  const formatted = num.toLocaleString('en-AU', { maximumFractionDigits: 2 });
+  if (formatted !== before) {
+    compareInput.value = formatted;
+    // Approximate cursor reposition (move to end of digits if reformat changed length)
+    const offset = formatted.length - before.length;
+    try { compareInput.setSelectionRange(cursor + offset, cursor + offset); } catch (_) {}
+  }
+}
+
+compareInput.addEventListener('input', () => {
+  parseCompareInput();
+});
+compareInput.addEventListener('blur', formatCompareInputDisplay);
+
+document.querySelectorAll('.cad-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.compare.unit = btn.dataset.unit;
+    document.querySelectorAll('.cad-pill').forEach(b => b.classList.toggle('active', b.dataset.unit === state.compare.unit));
+    parseCompareInput();
+  });
+});
+
+compareClear.addEventListener('click', () => {
+  compareInput.value = '';
+  state.compare.threshold = null;
+  compareClear.hidden = true;
+  reRenderPreservingSelection();
+  compareInput.focus();
+});
+
+// ─── SUBURB / POSTCODE SEARCH ───────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+const searchDropdown = document.getElementById('search-dropdown');
+const searchClear = document.getElementById('search-clear');
+
+function updateSearchPlaceholder() {
+  if (!searchInput) return;
+  searchInput.placeholder = state.mode === 'sal' ? 'Search suburbs…' : 'Search postcodes…';
+}
+
+function buildSearchIndex() {
+  const features = state.mode === 'sal' ? state.data.sal.features : state.data.poa.features;
+  const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+  const nameKey = state.mode === 'sal' ? 'sal_name_2021' : 'poa_name_2021';
+  return features.map(f => ({
+    code: f.properties[codeKey],
+    name: f.properties[nameKey] || f.properties[codeKey],
+  }));
+}
+
+function searchFeatures(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  if (!state.searchIndex) state.searchIndex = buildSearchIndex();
+  const matches = state.searchIndex.filter(item =>
+    item.name.toLowerCase().includes(q) ||
+    (state.mode === 'poa' && item.code.includes(q))
+  );
+  matches.sort((a, b) => {
+    const aPrefix = a.name.toLowerCase().startsWith(q);
+    const bPrefix = b.name.toLowerCase().startsWith(q);
+    if (aPrefix !== bPrefix) return aPrefix ? -1 : 1;
+    return a.name.length - b.name.length;
+  });
+  return matches.slice(0, 8);
+}
+
+function highlightMatch(text, query) {
+  if (!query) return text;
+  const i = text.toLowerCase().indexOf(query.toLowerCase());
+  if (i < 0) return text;
+  return text.slice(0, i) + '<mark>' + text.slice(i, i + query.length) + '</mark>' + text.slice(i + query.length);
+}
+
+function renderSearchDropdown(query) {
+  const matches = searchFeatures(query);
+  if (matches.length === 0) {
+    searchDropdown.innerHTML = '<div class="search-empty">No matches</div>';
+  } else {
+    searchDropdown.innerHTML = matches.map(m => `
+      <div class="search-item" data-code="${m.code}">
+        <span class="name">${highlightMatch(m.name, query)}</span>
+        <span class="code">${state.mode === 'sal' ? 'SAL ' + m.code : m.code}</span>
+      </div>
+    `).join('');
+    searchDropdown.querySelectorAll('.search-item').forEach(item => {
+      item.addEventListener('click', () => selectFromSearch(item.dataset.code));
+    });
+  }
+  searchDropdown.hidden = false;
+}
+
+function selectFromSearch(code) {
+  const codeKey = state.mode === 'sal' ? 'sal_code_2021' : 'poa_code_2021';
+  state.layer.eachLayer(l => {
+    if (l.feature.properties[codeKey] === code) {
+      const bounds = l.getBounds();
+      map.fitBounds(bounds, { maxZoom: 14, padding: [50, 50] });
+      selectFeature(l, l.feature);
+    }
+  });
+  searchInput.value = '';
+  searchDropdown.hidden = true;
+  searchClear.hidden = true;
+  searchInput.blur();
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value;
+  searchClear.hidden = !q;
+  if (!q.trim()) {
+    searchDropdown.hidden = true;
+    return;
+  }
+  renderSearchDropdown(q);
+});
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim()) renderSearchDropdown(searchInput.value);
+});
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    searchClear.hidden = true;
+    searchDropdown.hidden = true;
+    searchInput.blur();
+  } else if (e.key === 'Enter') {
+    const first = searchDropdown.querySelector('.search-item');
+    if (first) selectFromSearch(first.dataset.code);
+    e.preventDefault();
+  }
+});
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.hidden = true;
+  searchDropdown.hidden = true;
+  searchInput.focus();
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.panel-search')) searchDropdown.hidden = true;
+});
+
+// ─── INIT ───────────────────────────────────────────────────────────
+(async () => {
+  const savedTheme = localStorage.getItem('brisbane-income-map-theme');
+  state.theme = (savedTheme === 'stone' || savedTheme === 'parchment') ? savedTheme : 'parchment';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.querySelectorAll('.theme-toggle .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === state.theme);
+  });
+  setTileLayer(state.theme);
+
+  await loadData();
+  state.metricKey = METRICS.sal[0].key;
+  populateMetricToggle();
+  updateSearchPlaceholder();
+  render();
+})();
+</script>
+
+</body>
+</html>
