@@ -2,7 +2,7 @@
 <html lang="en" data-theme="parchment">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Greater Brisbane Income Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -84,6 +84,8 @@ body {
   display: grid;
   grid-template-rows: 68px 1fr;
   grid-template-columns: 1fr 460px;
+  height: 100vh;
+  height: 100dvh;
   transition: background 0.3s ease, color 0.3s ease;
   font-feature-settings: 'kern' 1, 'liga' 1;
   -webkit-font-smoothing: antialiased;
@@ -289,6 +291,45 @@ header::after {
 }
 
 .spacer { flex: 1; }
+
+/* ─── HAMBURGER (mobile only) ─────────────────────────────────────── */
+.menu-btn {
+  display: none;        /* shown on mobile via media query */
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.menu-btn:hover { background: var(--bg-card); color: var(--jacaranda); }
+.menu-btn[aria-expanded="true"] { background: var(--jacaranda); color: var(--bg-card); border-color: var(--jacaranda); }
+
+/* ─── BOTTOM-SHEET CLOSE (mobile only) ────────────────────────────── */
+.sheet-close {
+  display: none;        /* shown on mobile via media query */
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sheet-close:hover { background: var(--bg-card); color: var(--jacaranda); }
 
 /* ─── MAP ────────────────────────────────────────────────────────── */
 #map {
@@ -1267,54 +1308,173 @@ body[data-lens="market"] .panel-footer .source-households { display: none; }
   filter: drop-shadow(0 0 8px rgba(232, 145, 120, 0.55));
 }
 
-/* ─── MOBILE ─────────────────────────────────────────────────────── */
-.mobile-notice { display: none; }
-
-@media (max-width: 900px) {
+/* ─── MOBILE ─────────────────────────────────────────────────────────
+   Touch-aware breakpoint: catches phones (<=768) AND large touch devices
+   like Z-Folds where CSS viewport reports ~1000px even folded. */
+@media (max-width: 768px), (max-width: 1100px) and (pointer: coarse) {
   body {
-    grid-template-rows: 30px 64px auto 1fr;
+    grid-template-rows: auto 1fr;
     grid-template-columns: 1fr;
   }
-  .mobile-notice {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+  /* Header: single row by default (brand + hamburger). When open,
+     wrap so controls drop to a second visual row beneath the title. */
+  header {
     grid-row: 1;
     grid-column: 1;
-    background: var(--bg-elevated);
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.66rem;
-    padding: 0 14px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    gap: 10px;
+    min-height: 56px;
+  }
+  .menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* The four control groups stack vertically when the menu is open. */
+  header > .pill-group,
+  header > .metric-toggle-wrap,
+  header > .theme-toggle {
+    display: none;
+    flex-basis: 100%;
+    width: 100%;
+    margin-left: 0;
+  }
+  header.controls-open > .pill-group,
+  header.controls-open > .metric-toggle-wrap,
+  header.controls-open > .theme-toggle {
+    display: flex;
+  }
+
+  header .pill-group { justify-content: stretch; }
+  header .pill-group .pill { flex: 1; padding: 9px 10px; font-size: 0.72rem; min-height: 38px; }
+
+  /* Metric toggle becomes a wrapped grid of pills */
+  .metric-toggle-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .control-label {
+    border-right: 0;
+    padding-right: 0;
+    text-align: left;
+  }
+  .metric-pill-group {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .metric-pill-group .pill {
+    flex: 1 1 calc(33% - 4px);
+    min-width: 0;
     text-align: center;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    z-index: 1001;
   }
-  .mobile-notice em { color: var(--jacaranda); font-style: normal; font-weight: 500; margin-right: 5px; }
-  header { grid-row: 2; overflow-x: auto; }
-  aside {
+  .theme-toggle::before { display: none; }   /* hide hover-only label on touch */
+
+  /* Map fills the remainder. */
+  #map {
     grid-column: 1;
-    grid-row: 3;
-    border-left: 0;
-    border-bottom: 1px solid var(--border);
-    max-height: 50vh;
+    grid-row: 2;
   }
-  #map { grid-column: 1; grid-row: 4; }
-  .legend { bottom: 14px; min-width: 0; max-width: calc(100vw - 28px); }
+
+  /* Sidebar becomes a bottom sheet. Hidden until a suburb/postcode is picked. */
+  aside {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: auto;
+    max-height: 72vh;
+    max-height: 72dvh;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+    transform: translateY(calc(100% + 24px));
+    transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+    z-index: 1100;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  aside.sheet-open { transform: translateY(0); }
+
+  /* Drag-handle visual at the top of the sheet */
+  aside::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 4px;
+    background: var(--text-muted);
+    opacity: 0.35;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .sheet-close { display: inline-flex; align-items: center; justify-content: center; }
+
+  .panel-search { padding-top: 22px; }    /* leave space for handle + close */
+  .panel-body { padding: 16px 18px 12px; gap: 10px; }
+  .panel-head h2 { font-size: 1.6rem; }
+  .panel-head .ctx { font-size: 0.78rem; margin-top: 8px; }
+  .panel-footer { padding: 12px 18px 16px; font-size: 0.78rem; }
+  .panel-footer span > i { flex-basis: 72px; font-size: 0.7rem; }
+
+  /* Legend: compact, pinned bottom-left, but never wider than ~half screen
+     so it doesn't fight with the sheet's drag handle. */
+  .legend {
+    bottom: 14px;
+    left: max(10px, env(safe-area-inset-left));
+    right: auto;
+    min-width: 0;
+    max-width: calc(100vw - 20px);
+    padding: 11px 14px 10px;
+    font-size: 0.85rem;
+  }
+  /* When the bottom sheet is open, push the legend up out of the way. */
+  body.sheet-active .legend { display: none; }
+
+  .legend-tabs { padding: 2px; }
+  .legend-tab { padding: 8px 10px; font-size: 0.72rem; min-height: 36px; }
+  .legend-title { font-size: 0.72rem; margin-bottom: 8px; }
+  .legend-bar { height: 10px; }
+  .legend-scale { font-size: 0.78rem; }
+
+  .compare-input-row { padding: 4px 4px 4px 8px; }
+  #compare-input { font-size: 1rem; }
+  .cad-pill { padding: 8px 0; font-size: 0.72rem; min-height: 36px; }
+
+  /* Metric cards: tighten and let context-grid wrap to a single column on
+     very narrow phones to keep numbers readable. */
+  .metric-card { padding: 11px 14px; }
+  .metric-card.headline { padding: 14px 16px 14px 18px; }
+  .metric-card.headline .primary { font-size: 1.9rem; }
+  .metric-card .primary { font-size: 1.55rem; }
+  .context-grid { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 360px) {
+    .context-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Make sure Leaflet's zoom and attribution stay clear of the safe area
+     and the bottom sheet handle. */
+  .leaflet-bottom.leaflet-right { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+  .leaflet-control-attribution { font-size: 0.55rem !important; }
 }
 </style>
 </head>
 <body>
 
-<div class="mobile-notice"><em>Note</em>Best viewed on desktop</div>
-
-<header>
+<header id="app-header">
   <div class="brand">
     <h1>Greater Brisbane <em>Income</em></h1>
     <span class="tag" id="brand-tag">Census · ATO</span>
   </div>
+
+  <button class="menu-btn" id="menu-btn" type="button" aria-label="Toggle controls" aria-expanded="false" aria-controls="app-header">☰</button>
 
   <div class="pill-group" id="lens-toggle" role="group" aria-label="Data source">
     <button class="pill active" data-lens="households" type="button">Census &amp; ATO</button>
@@ -1380,6 +1540,7 @@ body[data-lens="market"] .panel-footer .source-households { display: none; }
 </div>
 
 <aside id="panel">
+  <button class="sheet-close" id="sheet-close" type="button" aria-label="Close panel">×</button>
   <div class="panel-search">
     <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
       <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2" />
@@ -1690,6 +1851,7 @@ function selectFeature(layer, feat) {
   const rec = mode === 'sal' ? state.data.census[code] : state.data.ato[code];
 
   renderPanel(name, code, rec, mode);
+  openMobileSheet();
 }
 
 // ─── LEGEND ─────────────────────────────────────────────────────────
@@ -2165,6 +2327,30 @@ function renderMarketPanel(code, body) {
   body.appendChild(note);
 }
 
+// ─── MOBILE MENU + BOTTOM SHEET ─────────────────────────────────────
+// Use document.getElementById inside helpers (not closure-captured const)
+// to avoid TDZ issues if a handler fires before the const is initialised.
+function closeMobileMenu() {
+  const h = document.getElementById('app-header');
+  if (h && h.classList.contains('controls-open')) {
+    h.classList.remove('controls-open');
+    const btn = document.getElementById('menu-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+}
+function openMobileSheet() {
+  const a = document.getElementById('panel');
+  if (!a) return;
+  a.classList.add('sheet-open');
+  document.body.classList.add('sheet-active');
+}
+function closeMobileSheet() {
+  const a = document.getElementById('panel');
+  if (!a) return;
+  a.classList.remove('sheet-open');
+  document.body.classList.remove('sheet-active');
+}
+
 // ─── UI WIRING ──────────────────────────────────────────────────────
 function setMode(mode) {
   state.mode = mode;
@@ -2179,6 +2365,8 @@ function setMode(mode) {
   updateSearchPlaceholder();
   resetPanel();
   render();
+  closeMobileMenu();
+  closeMobileSheet();
 }
 
 function setLens(lens) {
@@ -2192,6 +2380,8 @@ function setLens(lens) {
   updateBrandTag();
   resetPanel();
   render();
+  closeMobileMenu();
+  closeMobileSheet();
 }
 
 function updateBrandTag() {
@@ -2226,6 +2416,7 @@ function setMetric(key) {
   } else {
     render();
   }
+  closeMobileMenu();
 }
 
 function populateMetricToggle() {
@@ -2257,6 +2448,7 @@ function setTheme(theme) {
       });
     }
   }
+  closeMobileMenu();
 }
 
 function resetPanel() {
@@ -2291,6 +2483,20 @@ document.querySelectorAll('#lens-toggle .pill').forEach(btn => {
 document.querySelectorAll('.theme-toggle .pill').forEach(btn => {
   btn.addEventListener('click', () => setTheme(btn.dataset.theme));
 });
+
+// ─── MOBILE: HAMBURGER + SHEET CLOSE ────────────────────────────────
+{
+  const menuBtn = document.getElementById('menu-btn');
+  const headerEl = document.getElementById('app-header');
+  if (menuBtn && headerEl) {
+    menuBtn.addEventListener('click', () => {
+      const open = headerEl.classList.toggle('controls-open');
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  const sheetClose = document.getElementById('sheet-close');
+  if (sheetClose) sheetClose.addEventListener('click', closeMobileSheet);
+}
 
 // ─── LEGEND TABS ────────────────────────────────────────────────────
 function setTab(tab) {
